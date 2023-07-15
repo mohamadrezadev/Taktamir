@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,14 +20,22 @@ namespace Taktamir.infra.Data.sql._03.Users
             throw new NotImplementedException();
         }
 
-        public Task<User> Finduserbyphonenumber(string phonenumberId, CancellationToken cancellationToken)
+        public async Task<User> Finduserbyphonenumber(string phonenumber, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
-        }
+           var result=await DbContext.Users.FirstOrDefaultAsync(p => p.PhoneNumber.Equals(phonenumber));
+            if (result==null)return null;
+            return result;
 
-        public Task<User> UpdateUser(User user, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
+        public Task<bool> TechnicianAccountVerification(int TechnicianId)
+        {
+            var user = DbContext.Users.FirstOrDefault(p => p.Id == TechnicianId);
+            if (user == null) throw new Exception("Not Found Technician Account ....!");
+            user.IsActive = true;
+            DbContext.Update(user);
+            DbContext.SaveChanges();
+            return Task.FromResult(true);
+        }
+        
     }
 }

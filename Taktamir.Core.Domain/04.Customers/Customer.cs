@@ -8,7 +8,7 @@ namespace Taktamir.Core.Domain._4.Customers
     {
         public Customer()
         {
-            Jobs = new HashSet<Job>();
+            Jobs = new List<Job>();
         }
         public int Id { get; set; }
         public string FullNameCustomer { get; set; }

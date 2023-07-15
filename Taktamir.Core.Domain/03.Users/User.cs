@@ -9,16 +9,20 @@ using System.Text;
 using System.Threading.Tasks;
 using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.Core.Domain._05.Messages;
+using Taktamir.Core.Domain._06.Wallets;
 
 namespace Taktamir.Core.Domain._03.Users
 {
-    public class User : IdentityUser, IEntity
+    public class User : IdentityUser<int>, IEntity
     {
         public User()
         {
             IsActive = false;
             IsLocked = false;
             IsCompleteprofile = false;
+            this.Wallet=new Wallet();
+            
         }
 
         [Required]
@@ -45,16 +49,12 @@ namespace Taktamir.Core.Domain._03.Users
 
         public string Access_Token { get; set; }
 
-        public string JobId { get; set; }
+        public int IdWallet { get; set; }
+        [ForeignKey("IdWallet")]
+        public virtual Wallet Wallet { get; set; }
 
-        [ForeignKey("JobId")]
-        public virtual Job Job { get; set; }
+        public ICollection<Message> Messages { get; set; }
 
-        public virtual ICollection<UserRole> UserRoles { get; set; }
-
-        public virtual ICollection<Job> Jobs { get; set; }
-
-        
     }
     public enum UserRole 
     {

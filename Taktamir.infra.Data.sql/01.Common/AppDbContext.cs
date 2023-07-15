@@ -10,14 +10,17 @@ using System.Transactions;
 using Taktamir.Core.Domain._03.Users;
 using Microsoft.EntityFrameworkCore;
 using Taktamir.Core.Domain._01.Jobs;
-using Taktamir.Core.Domain._4.Customer.cs;
+using Taktamir.Core.Domain._4.Customers;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using TralnslateNarengi.Framework.Utilities;
+using Taktamir.Core.Domain._06.Wallets;
+using Taktamir.Core.Domain._05.Messages;
+using Taktamir.Core.Domain._07.Suppliess;
 
 namespace Taktamir.infra.Data.sql._01.Common
 {
-    public partial class AppDbContext : IdentityDbContext<User, Role, string>
+    public partial class AppDbContext : IdentityDbContext<User, Role, int>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -25,7 +28,9 @@ namespace Taktamir.infra.Data.sql._01.Common
         }
         public AppDbContext()
         {
+            
         }
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -39,12 +44,18 @@ namespace Taktamir.infra.Data.sql._01.Common
             base.OnModelCreating(builder);
 
         }
-        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        //{
-        //    //optionsBuilder.UseSqlite("Data Source=LocalDatabase.db");
-        //}
-        public virtual DbSet<Job> Categories { get; set; }
-        public virtual DbSet<Customer> Articles { get; set; }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseSqlite("Data Source=LocalDatabase.db");
+        }
+        public virtual DbSet<Job> Jobs { get; set; }
+        public virtual DbSet<Customer> Customers { get; set; }
+        public virtual DbSet<Order> Orders { get; set; }
+        public virtual DbSet<Wallet> Wallets { get; set; }
+        public virtual DbSet<Message> Messages { get; set; }
+        public virtual DbSet<Supplies> Supplies { get; set; }
+
+
         
 
 
