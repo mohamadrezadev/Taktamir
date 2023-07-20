@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Core.Domain._07.Suppliess;
 using Taktamir.Core.Domain._4.Customers;
+using Taktamir.Endpoint.Profiles;
 using Taktamir.infra.Data.sql._01.Common;
 using Taktamir.infra.Data.sql._02.Jobs;
 using Taktamir.infra.Data.sql._03.Users;
@@ -28,9 +32,42 @@ namespace Taktamir.Endpoint
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-           
-            builder.Services.AddSwaggerGen();
-            builder.Services.AddDbContext<AppDbContext>();
+
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Taktamir API",
+                    Version = "v1",
+                    //Description = "An API to perform Jobs operations",
+                    //TermsOfService = new Uri("https://example.com/terms"),
+                    Contact = new OpenApiContact
+                    {
+                        Name = "mohamadrezakiani",
+                        Email = "mohamadrezakiani9@yahoo.com",
+                       // Url = new Uri("https://twitter.com/jwalkner"),
+                    },
+                    License = new OpenApiLicense
+                    {
+                        Name = "taktamir API LICX",
+                       // Url = new Uri("https://example.com/license"),
+                    }
+                });
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+            });
+         
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+            {
+                options.UseSqlite(builder.Configuration["sqliteconn"], b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
+                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+                options.EnableSensitiveDataLogging();
+            });
+          
+            builder.Services.AddAutoMapper(typeof(MappingProfile));
             builder.Services.AddScoped<IUserRepository, UserRepository>();
             builder.Services.AddScoped<IJobRepository, JobRepository>();
             builder.Services.AddScoped<IWalletRepository, WalletsRepository>();
@@ -42,13 +79,9 @@ namespace Taktamir.Endpoint
             
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
+            
+            app.UseSwagger();
+            app.UseSwaggerUI();
             app.UseHttpsRedirection();
 
             app.UseAuthorization();

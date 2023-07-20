@@ -2,9 +2,26 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <WarningsNotAsErrors />
+    <NoWarn>1701;1702;1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <WarningsNotAsErrors />
+    <NoWarn>1701;1702;1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Users\moham\.nuget\packages\iranivalidator.core\6.0.0\contentFiles\any\net6.0\logo.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />
@@ -20,13 +37,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Taktamir.Services\Taktamir.Services.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\Dtos\JobDtos\" />
-    <Folder Include="Models\Dtos\CustomerDtos\" />
-    <Folder Include="Models\Dtos\WalletDtos\" />
-    <Folder Include="Models\Dtos\UserDtos\" />
   </ItemGroup>
 
 </Project>

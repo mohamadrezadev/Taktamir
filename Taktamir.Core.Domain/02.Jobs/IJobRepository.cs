@@ -7,7 +7,7 @@ namespace Taktamir.Core.Domain._01.Jobs
 {
     public interface IJobRepository : IRepository<Job>
     {
-      
+       Task<Job> GetJobBtid(int id);
 
         /// <summary>
         /// افزودن لوازم برای کار انجام شده 

@@ -18,7 +18,15 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         {
         }
 
-      
+        public async Task<int> AddNewJob(Job job)
+        {
+            //var exitjob=DbContext.Jobs.Any(p=>p.Id==job.Id);
+            //if (exitjob) return null
+            DbContext.Jobs.Add(job);
+            await DbContext.SaveChangesAsync();
+            return job.Id;
+            
+        }
 
         public Task<bool> AddSupplies(int idjob, Supplies newsupplies)
         {
@@ -68,7 +76,8 @@ namespace Taktamir.infra.Data.sql._02.Jobs
 
         public Task<List<Job>> GetAllJobsByAdmin()
         {
-            var result=DbContext.Jobs.Where(p=>p.StatusJob!=(int)StatusJob.waiting).ToList();
+            //var result=DbContext.Jobs.Where(p=>p.StatusJob!=(int)StatusJob.waiting).ToList();
+            var result=DbContext.Jobs.ToList();
 
             return Task.FromResult(result);
         }
@@ -81,6 +90,12 @@ namespace Taktamir.infra.Data.sql._02.Jobs
             return Task.FromResult(result);
         }
 
+        public async Task<Job> GetJobBtid(int id)
+        {
+            var job=await DbContext.Jobs.Include(c=>c.Customer).FirstOrDefaultAsync(p=>p.Id==id);
+            return job;
+        }
+
         public Task<List<Job>> GetJobwaiting()
         {
             var result=DbContext.Jobs.Where(p=>p.StatusJob==(int) StatusJob.waiting).ToList();
@@ -91,7 +106,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         {
             var walletuser=DbContext.Wallets.Include(p=>p.Orders).FirstOrDefault(p=>p.UserId==userid);
             if (walletuser == null) throw new Exception("this id not wallet ");
-            var userJobs = walletuser.Orders.SelectMany(o => o.Jobs).ToList();
+            var userJobs = walletuser.Orders.Select(o => o.Jobs).ToList();
             //List<Job> UserJob = new List<Job>();
             //var result = walletuser.Orders;
             //foreach (var order in result)
@@ -109,9 +124,9 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         {
             var walletUser=DbContext.Wallets.FirstOrDefault(p=>p.UserId==userid);
             job.StatusJob =(int) StatusJob.Doing;
-            job.UserId = userid;
+            job.User.Id = userid;
             job.User=await DbContext.Users.FirstOrDefaultAsync(p=>p.Id==userid)?? null;
-            walletUser.Orders.ToList().ForEach(order => order.Jobs.Add(job));
+            walletUser.Orders.ToList().ForEach(order => order.Jobs=job);
             await DbContext.SaveChangesAsync();
 
            

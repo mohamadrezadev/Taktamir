@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.Endpoint.Models.Dtos.JobDtos;
+using Taktamir.infra.Data.sql._02.Jobs;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -8,36 +12,27 @@ namespace Taktamir.Endpoint.Controllers.Admin
     [ApiController]
     public class JobAdminController : ControllerBase
     {
-        // GET: api/<JobAdminController>
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private readonly IJobRepository _JobService;
+        private readonly IMapper _mapper;
+
+        public JobAdminController(IJobRepository JobService,IMapper mapper)
         {
-            return new string[] { "value1", "value2" };
+            _JobService = JobService;
+            _mapper = mapper;
         }
 
-        // GET api/<JobAdminController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
 
-        // POST api/<JobAdminController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<JobAdminController>/5
+        // PUT api/<JobsController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Put(int id, [FromBody] ReadJobDto model, CancellationToken cancellationToken)
         {
-        }
-
-        // DELETE api/<JobAdminController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            if (id <= 0) return BadRequest("Invalid Id");
+            if (!ModelState.IsValid) return BadRequest(model);
+            var updatejob = _mapper.Map<Job>(model);
+            await _JobService.UpdateAsync(updatejob, cancellationToken);
+            var result = await _JobService.GetByIdAsync(cancellationToken, updatejob.Id);
+            Response.StatusCode = StatusCodes.Status204NoContent;
+            return Ok(result);
         }
     }
 }

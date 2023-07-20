@@ -16,12 +16,36 @@ namespace Taktamir.infra.Data.sql._06.Wallets
         {
         }
 
-        public async Task<bool> AddNewOrder(int walletid, Order order)
-        {
-            var wallet = await DbContext.Wallets.SingleOrDefaultAsync(p => p.Id == walletid);
-            if (wallet == null) throw new Exception("Wallet not found");
+        //public  Task<bool> AddNewOrder(int walletid, Order order)
+        //{
+        //    var wallet =  DbContext.Wallets.SingleOrDefault(p => p.Id == walletid);
+        //    if (wallet == null) throw new Exception("Wallet not found");
 
-            if (order == null) throw new Exception("Order cannot be null");
+        //    if (order == null) throw new Exception("Order cannot be null");
+
+        //    try
+        //    {
+        //        wallet.Orders.Add(order);
+        //         DbContext.SaveChanges();
+        //        return Task.FromResult(true);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.ToString());
+        //        return Task.FromResult(false);
+        //    }
+           
+        //}
+  
+    public async Task<bool> AddNewOrder(int walletId, Order order)
+        {
+            var wallet = await DbContext.Wallets.FindAsync(walletId);
+
+            if (wallet == null)
+                return false;
+
+            if (order == null)
+                return false;
 
             try
             {
@@ -34,20 +58,22 @@ namespace Taktamir.infra.Data.sql._06.Wallets
                 Console.WriteLine(ex.ToString());
                 return false;
             }
-           
         }
-
-        public async Task<bool> CreateWallet(Wallet wallet)
+        public  Task<bool> CreateWallet(Wallet wallet)
         {
+            if (wallet==null)
+            {
+                return Task.FromResult(false);
+            }
             var userwallet = DbContext.Users
                 .Include(p => p.Wallet).FirstOrDefault(p => p.Id == wallet.UserId);
             if (userwallet == null)
             {
-                await DbContext.Wallets.AddAsync(wallet);
-                await DbContext.SaveChangesAsync();
-                return true;
+                 DbContext.Wallets.Add(wallet);
+                 DbContext.SaveChanges();
+                return Task.FromResult(true);
             }
-            return false;
+            return Task.FromResult(false);
         }
 
         public async Task<List<Order>> GetAllOrders(int userid)

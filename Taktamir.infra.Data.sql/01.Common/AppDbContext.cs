@@ -17,20 +17,21 @@ using TralnslateNarengi.Framework.Utilities;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._07.Suppliess;
+using Microsoft.Extensions.Configuration;
 
 namespace Taktamir.infra.Data.sql._01.Common
 {
     public partial class AppDbContext : IdentityDbContext<User, Role, int>
     {
+
+        public AppDbContext()
+        {
+
+        }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 
         }
-        public AppDbContext()
-        {
-            
-        }
-
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -44,9 +45,10 @@ namespace Taktamir.infra.Data.sql._01.Common
             base.OnModelCreating(builder);
 
         }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder  )
         {
-            optionsBuilder.UseSqlite("Data Source=LocalDatabase.db");
+
+           // optionsBuilder.UseSqlite("Data Source=LocalDatabase.db");
         }
         public virtual DbSet<Job> Jobs { get; set; }
         public virtual DbSet<Customer> Customers { get; set; }

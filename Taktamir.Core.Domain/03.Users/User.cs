@@ -22,6 +22,7 @@ namespace Taktamir.Core.Domain._03.Users
             IsLocked = false;
             IsCompleteprofile = false;
             this.Wallet=new Wallet();
+            this.Specialties = new HashSet<string>();
             
         }
 
@@ -49,8 +50,7 @@ namespace Taktamir.Core.Domain._03.Users
 
         public string Access_Token { get; set; }
 
-        public int IdWallet { get; set; }
-        [ForeignKey("IdWallet")]
+        public virtual ICollection<string> Specialties { get; set; }
         public virtual Wallet Wallet { get; set; }
 
         public ICollection<Message> Messages { get; set; }
