@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Taktamir.Core.Domain._03.Users;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -8,36 +10,33 @@ namespace Taktamir.Endpoint.Controllers.Admin
     [ApiController]
     public class AdminUsersController : ControllerBase
     {
-        // GET: api/<AdminUsersController>
+        private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
+
+        public AdminUsersController(IUserRepository userRepository,IMapper mapper)
+        {
+            _userRepository = userRepository;
+            _mapper = mapper;
+        }
+       
+        [HttpGet("{userid}")]
+        public IActionResult VerifyUser(int userid)
+        {
+            var user = _userRepository.GetById(userid);
+            if (user == null) return NotFound("User not found");
+            user.IsActive = true;
+            _userRepository.Update(user);
+            return Ok("verify user Sucssesfuly");
+        }
+
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IActionResult GetStatususers()
         {
-            return new string[] { "value1", "value2" };
+            var users = _userRepository.Entities.ToList();
+            var result = _mapper.Map<List<User>>(users);
+            return Ok(result);
+        
         }
-
-        // GET api/<AdminUsersController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<AdminUsersController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<AdminUsersController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<AdminUsersController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+      
     }
 }

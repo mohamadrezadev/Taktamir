@@ -104,7 +104,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
 
         public Task<List<Job>> GetUserJobs(int userid)
         {
-            var walletuser=DbContext.Wallets.Include(p=>p.Orders).FirstOrDefault(p=>p.UserId==userid);
+            var walletuser=DbContext.Wallets.Include(p=>p.Orders).FirstOrDefault(p=>p.User.Id==userid);
             if (walletuser == null) throw new Exception("this id not wallet ");
             var userJobs = walletuser.Orders.Select(o => o.Jobs).ToList();
             //List<Job> UserJob = new List<Job>();
@@ -122,7 +122,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
 
         public async Task JobbookingForUser(int userid,Job job)
         {
-            var walletUser=DbContext.Wallets.FirstOrDefault(p=>p.UserId==userid);
+            var walletUser=DbContext.Wallets.FirstOrDefault(p=>p.User.Id==userid);
             job.StatusJob =(int) StatusJob.Doing;
             job.User.Id = userid;
             job.User=await DbContext.Users.FirstOrDefaultAsync(p=>p.Id==userid)?? null;

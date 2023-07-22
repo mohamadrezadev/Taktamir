@@ -11,7 +11,7 @@ using Taktamir.infra.Data.sql._01.Common;
 namespace Taktamir.infra.Data.sql.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230722114933_MyFirstMigration")]
+    [Migration("20230723213338_MyFirstMigration")]
     partial class MyFirstMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -133,9 +133,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Property<string>("Name_Device")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("OrderId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("Problems")
                         .HasColumnType("TEXT");
 
@@ -145,17 +142,15 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Property<int>("StatusJob")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("UsedTokcet")
+                    b.Property<int?>("UserId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int?>("UserId")
+                    b.Property<bool>("usTagged")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
-
-                    b.HasIndex("OrderId");
 
                     b.HasIndex("UserId");
 
@@ -189,6 +184,25 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
+            modelBuilder.Entity("Taktamir.Core.Domain._03.Users.Specialty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Specialties");
+                });
+
             modelBuilder.Entity("Taktamir.Core.Domain._03.Users.User", b =>
                 {
                     b.Property<int>("Id")
@@ -216,11 +230,7 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Firstname")
-                        .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("IdWallet")
-                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
@@ -232,7 +242,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastName")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("LockoutEnabled")
@@ -279,6 +288,9 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("walletId")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -344,21 +356,23 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("JobId")
+                    b.Property<int?>("JobsId")
                         .HasColumnType("INTEGER");
 
                     b.Property<double>("Total")
                         .HasColumnType("REAL");
 
+                    b.Property<int?>("WalletId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double>("spent")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("walletid")
-                        .HasColumnType("INTEGER");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("walletid");
+                    b.HasIndex("JobsId");
+
+                    b.HasIndex("WalletId");
 
                     b.ToTable("Orders");
                 });
@@ -403,6 +417,29 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.HasIndex("JobId");
 
                     b.ToTable("Supplies");
+                });
+
+            modelBuilder.Entity("Taktamir.Core.Domain._08.Verifycodes.Verifycode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DateTimeSendeCode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("code")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("phone_number")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Verifycodes");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._4.Customers.Customer", b =>
@@ -488,15 +525,22 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .WithMany("Jobs")
                         .HasForeignKey("CustomerId");
 
-                    b.HasOne("Taktamir.Core.Domain._06.Wallets.Order", null)
-                        .WithMany("Jobs")
-                        .HasForeignKey("OrderId");
-
                     b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
 
                     b.Navigation("Customer");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Taktamir.Core.Domain._03.Users.Specialty", b =>
+                {
+                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
+                        .WithMany("Specialties")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -529,11 +573,15 @@ namespace Taktamir.infra.Data.sql.Migrations
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
                 {
+                    b.HasOne("Taktamir.Core.Domain._01.Jobs.Job", "Jobs")
+                        .WithMany()
+                        .HasForeignKey("JobsId");
+
                     b.HasOne("Taktamir.Core.Domain._06.Wallets.Wallet", "Wallet")
                         .WithMany("Orders")
-                        .HasForeignKey("walletid")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("WalletId");
+
+                    b.Navigation("Jobs");
 
                     b.Navigation("Wallet");
                 });
@@ -565,17 +613,14 @@ namespace Taktamir.infra.Data.sql.Migrations
                 {
                     b.Navigation("Messages");
 
+                    b.Navigation("Specialties");
+
                     b.Navigation("Wallet");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
                 {
                     b.Navigation("Messages");
-                });
-
-            modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
-                {
-                    b.Navigation("Jobs");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Wallet", b =>

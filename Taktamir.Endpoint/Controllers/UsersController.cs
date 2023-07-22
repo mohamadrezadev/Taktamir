@@ -233,5 +233,15 @@ namespace Taktamir.Endpoint.Controllers
             Response.StatusCode= StatusCodes.Status204NoContent;
             return Ok();
         }
+
+        [HttpPost("Change_Status_Account_User")]
+        public IActionResult StatusAccountUser(int userId,bool IsActive)
+        {
+            var user = _userRepository.GetById(userId);
+            if (user == null) return NotFound("User Not Found");
+            user.IsActive = IsActive;
+            _userRepository.Update(user);
+            return Ok("Changed Status Account User");
+        }
     }
 }

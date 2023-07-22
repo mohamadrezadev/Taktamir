@@ -66,7 +66,7 @@ namespace Taktamir.infra.Data.sql._06.Wallets
                 return Task.FromResult(false);
             }
             var userwallet = DbContext.Users
-                .Include(p => p.Wallet).FirstOrDefault(p => p.Id == wallet.UserId);
+                .Include(p => p.Wallet).FirstOrDefault(p => p.Id == wallet.User.Id);
             if (userwallet == null)
             {
                  DbContext.Wallets.Add(wallet);
@@ -78,7 +78,7 @@ namespace Taktamir.infra.Data.sql._06.Wallets
 
         public async Task<List<Order>> GetAllOrders(int userid)
         {
-            var wallet=await DbContext.Wallets.Include(p => p.Orders).FirstOrDefaultAsync(p => p.UserId == userid);
+            var wallet=await DbContext.Wallets.Include(p => p.Orders).FirstOrDefaultAsync(p => p.User.Id == userid);
             return wallet.Orders.ToList();
         }
 

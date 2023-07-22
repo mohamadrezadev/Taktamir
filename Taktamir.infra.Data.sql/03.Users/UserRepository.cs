@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._03.Users;
+using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.infra.Data.sql._01.Common;
 
 namespace Taktamir.infra.Data.sql._03.Users
@@ -14,10 +16,46 @@ namespace Taktamir.infra.Data.sql._03.Users
         public UserRepository(AppDbContext dbContext) : base(dbContext)
         {
         }
-
-        public Task<User> CreateAsync(User user, CancellationToken cancellationToken)
+        public async override ValueTask<User> GetByIdAsync(CancellationToken cancellationToken, params object[] ids)
         {
-            throw new NotImplementedException();
+            using (var transaction = await DbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var result = await Entities.Include(p=>p.Wallet).FirstOrDefaultAsync(p=>p.Id==(int)ids[0], cancellationToken);
+                    transaction.Commit();
+                    return result;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            
+        }
+        public async Task<User> CreateAsync(User entity, CancellationToken cancellationToken)
+        {
+            using (var transaction = await DbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var wallet = new Wallet();
+                    DbContext.Wallets.Add(wallet);;
+                    DbContext.SaveChanges();
+                    entity.Wallet = wallet;
+                    await Entities.AddAsync(entity, cancellationToken).ConfigureAwait(false);
+                    await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+                    transaction.Commit();
+                    return entity;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
         }
 
         public async Task<User> Finduserbyphonenumber(string phonenumber, CancellationToken cancellationToken)

@@ -30,8 +30,8 @@ namespace Taktamir.infra.Data.sql.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Firstname = table.Column<string>(type: "TEXT", nullable: false),
-                    LastName = table.Column<string>(type: "TEXT", nullable: false),
+                    Firstname = table.Column<string>(type: "TEXT", nullable: true),
+                    LastName = table.Column<string>(type: "TEXT", nullable: true),
                     Profile_url = table.Column<string>(type: "TEXT", nullable: true),
                     Create_at = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Update_at = table.Column<DateTime>(type: "TEXT", nullable: false),
@@ -41,7 +41,7 @@ namespace Taktamir.infra.Data.sql.Migrations
                     IsCompleteprofile = table.Column<bool>(type: "INTEGER", nullable: false),
                     Refresh_Token = table.Column<string>(type: "TEXT", nullable: true),
                     Access_Token = table.Column<string>(type: "TEXT", nullable: true),
-                    IdWallet = table.Column<int>(type: "INTEGER", nullable: false),
+                    walletId = table.Column<int>(type: "INTEGER", nullable: false),
                     UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
@@ -77,6 +77,22 @@ namespace Taktamir.infra.Data.sql.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Customers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Verifycodes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    code = table.Column<string>(type: "TEXT", nullable: true),
+                    phone_number = table.Column<string>(type: "TEXT", nullable: true),
+                    DateTimeSendeCode = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    IsUsed = table.Column<bool>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Verifycodes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -205,6 +221,26 @@ namespace Taktamir.infra.Data.sql.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Specialties",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Specialties", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Specialties_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Wallets",
                 columns: table => new
                 {
@@ -222,6 +258,36 @@ namespace Taktamir.infra.Data.sql.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Jobs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name_Device = table.Column<string>(type: "TEXT", nullable: true),
+                    Problems = table.Column<string>(type: "TEXT", nullable: true),
+                    StatusJob = table.Column<int>(type: "INTEGER", nullable: false),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    usTagged = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Reservation = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CustomerId = table.Column<int>(type: "INTEGER", nullable: true),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Jobs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Jobs_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Jobs_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -259,53 +325,21 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Total = table.Column<double>(type: "REAL", nullable: false),
                     spent = table.Column<double>(type: "REAL", nullable: false),
-                    walletid = table.Column<int>(type: "INTEGER", nullable: false),
-                    JobId = table.Column<int>(type: "INTEGER", nullable: false)
+                    WalletId = table.Column<int>(type: "INTEGER", nullable: true),
+                    JobsId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Orders", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Orders_Wallets_walletid",
-                        column: x => x.walletid,
+                        name: "FK_Orders_Jobs_JobsId",
+                        column: x => x.JobsId,
+                        principalTable: "Jobs",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Orders_Wallets_WalletId",
+                        column: x => x.WalletId,
                         principalTable: "Wallets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Jobs",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Name_Device = table.Column<string>(type: "TEXT", nullable: true),
-                    Problems = table.Column<string>(type: "TEXT", nullable: true),
-                    StatusJob = table.Column<int>(type: "INTEGER", nullable: false),
-                    Description = table.Column<string>(type: "TEXT", nullable: true),
-                    UsedTokcet = table.Column<bool>(type: "INTEGER", nullable: false),
-                    Reservation = table.Column<bool>(type: "INTEGER", nullable: false),
-                    CustomerId = table.Column<int>(type: "INTEGER", nullable: true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: true),
-                    OrderId = table.Column<int>(type: "INTEGER", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Jobs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Jobs_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Jobs_Customers_CustomerId",
-                        column: x => x.CustomerId,
-                        principalTable: "Customers",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_Jobs_Orders_OrderId",
-                        column: x => x.OrderId,
-                        principalTable: "Orders",
                         principalColumn: "Id");
                 });
 
@@ -372,11 +406,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                 column: "CustomerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Jobs_OrderId",
-                table: "Jobs",
-                column: "OrderId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Jobs_UserId",
                 table: "Jobs",
                 column: "UserId");
@@ -392,14 +421,24 @@ namespace Taktamir.infra.Data.sql.Migrations
                 column: "ToRoomId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Orders_walletid",
+                name: "IX_Orders_JobsId",
                 table: "Orders",
-                column: "walletid");
+                column: "JobsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_WalletId",
+                table: "Orders",
+                column: "WalletId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Room_AdminId",
                 table: "Room",
                 column: "AdminId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Specialties_UserId",
+                table: "Specialties",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Supplies_JobId",
@@ -434,7 +473,16 @@ namespace Taktamir.infra.Data.sql.Migrations
                 name: "Messages");
 
             migrationBuilder.DropTable(
+                name: "Orders");
+
+            migrationBuilder.DropTable(
+                name: "Specialties");
+
+            migrationBuilder.DropTable(
                 name: "Supplies");
+
+            migrationBuilder.DropTable(
+                name: "Verifycodes");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
@@ -443,19 +491,16 @@ namespace Taktamir.infra.Data.sql.Migrations
                 name: "Room");
 
             migrationBuilder.DropTable(
-                name: "Jobs");
-
-            migrationBuilder.DropTable(
-                name: "Customers");
-
-            migrationBuilder.DropTable(
-                name: "Orders");
-
-            migrationBuilder.DropTable(
                 name: "Wallets");
 
             migrationBuilder.DropTable(
+                name: "Jobs");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Customers");
         }
     }
 }

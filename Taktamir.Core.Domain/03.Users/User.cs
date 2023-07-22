@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -22,14 +23,12 @@ namespace Taktamir.Core.Domain._03.Users
             IsLocked = false;
             IsCompleteprofile = false;
             this.Wallet=new Wallet();
-            this.Specialties = new HashSet<string>();
+            
             
         }
 
-        [Required]
         public string Firstname { get; set; }
 
-        [Required]
         public string LastName { get; set; }
 
         public string Profile_url { get; set; }
@@ -49,17 +48,28 @@ namespace Taktamir.Core.Domain._03.Users
         public string Refresh_Token { get; set; }
 
         public string Access_Token { get; set; }
+       
 
-        public virtual ICollection<string> Specialties { get; set; }
+        public virtual ICollection<Specialty> Specialties { get; set; }
+
+        [ForeignKey("walletId")]
+        public int walletId { get; set; }
         public virtual Wallet Wallet { get; set; }
 
-        public ICollection<Message> Messages { get; set; }
+        public virtual ICollection<Message> Messages { get; set; }
+       
 
     }
-    public enum UserRole 
+    public enum Roleuser
     {
-        Admin = 0,
-        Technician= 1,
-        Employee= 2,
+        Admin=1,
+        Technician=2,
+        Employee=3
+    }
+    public static class UserRoleApp 
+    {
+       public const string Admin = "Admin";
+       public const string Technician = "Technician";
+       public const string Employee = "Employee";
     }
 }

@@ -18,6 +18,7 @@ using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._07.Suppliess;
 using Microsoft.Extensions.Configuration;
+using Taktamir.Core.Domain._08.Verifycodes;
 
 namespace Taktamir.infra.Data.sql._01.Common
 {
@@ -35,13 +36,12 @@ namespace Taktamir.infra.Data.sql._01.Common
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            //sure first line and up all another codes;
-            //builder.Entity<User>()
-            //    .HasOne(u => u.JobId)
-            //    .WithMany(j => j.)
-            //    .HasForeignKey<Job>(w => w.UserId);
+            builder.Entity<User>().HasMany(p=>p.Specialties).WithOne(j=>j.User).HasForeignKey(s=>s.UserId);
+            builder.Entity<User>()
+             .HasOne(u => u.Wallet)
+             .WithOne(w => w.User)
+             .HasForeignKey<Wallet>(w => w.UserId);
 
-            //builder.ApplyConfiguration(new MyEntityConfiguration());
             base.OnModelCreating(builder);
 
         }
@@ -56,6 +56,8 @@ namespace Taktamir.infra.Data.sql._01.Common
         public virtual DbSet<Wallet> Wallets { get; set; }
         public virtual DbSet<Message> Messages { get; set; }
         public virtual DbSet<Supplies> Supplies { get; set; }
+        public virtual DbSet<Verifycode> Verifycodes  { get; set; }
+        public virtual DbSet<Specialty> Specialties  { get; set; }
 
 
         

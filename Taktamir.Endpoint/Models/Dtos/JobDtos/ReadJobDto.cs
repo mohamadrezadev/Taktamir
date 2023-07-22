@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
+using Taktamir.Endpoint.Models.Dtos.UserDtos;
 
 namespace Taktamir.Endpoint.Models.Dtos.JobDtos
 {
@@ -16,6 +17,7 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
         public bool Reservation { get; set; } = false;
 
         public ReadCustomerDto Customer { get; set; }
+        public ReadUserDto UserDto { get; set; }
 
     }
 }

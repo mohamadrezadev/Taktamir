@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Endpoint.Models.Dtos.WalletDtos;
+using Taktamir.Core.Domain._03.Users;
 
 namespace Taktamir.Endpoint.Models.Dtos.UserDtos
 {

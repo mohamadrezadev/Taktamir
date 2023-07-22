@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
 using Taktamir.infra.Data.sql._02.Jobs;
@@ -20,7 +21,20 @@ namespace Taktamir.Endpoint.Controllers.Admin
             _JobService = JobService;
             _mapper = mapper;
         }
-
+        [HttpGet]
+        public IActionResult Get()
+        {
+            var jobs = _JobService.Entities.Include(p =>  p.Customer ).Include(p=>p.User).ToList();
+            var result=_mapper.Map<List<Job>>(jobs);
+            return Ok(result);
+        }
+        [HttpGet("{id}")]
+        public IActionResult Get(int id)
+        {
+            var job = _JobService.GetById(id); 
+            var result = _mapper.Map<Job>(job);
+            return Ok(result);
+        }
 
         // PUT api/<JobsController>/5
         [HttpPut("{id}")]
