@@ -11,7 +11,7 @@ namespace Taktamir.Core.Domain._4.Customers
        
         public Customer()
         {
-            Jobs = new HashSet<Job>();
+           
         }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -21,6 +21,7 @@ namespace Taktamir.Core.Domain._4.Customers
         public string Phone { get; set; }
         public string Address { get; set; }
         public string Identification_code { get; set; }
+
         public virtual ICollection<Job> Jobs { get; set; }
 
     }

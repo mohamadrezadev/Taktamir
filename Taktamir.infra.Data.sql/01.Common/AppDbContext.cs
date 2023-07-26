@@ -19,11 +19,14 @@ using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._07.Suppliess;
 using Microsoft.Extensions.Configuration;
 using Taktamir.Core.Domain._08.Verifycodes;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 
 namespace Taktamir.infra.Data.sql._01.Common
 {
     public partial class AppDbContext : IdentityDbContext<User, Role, int>
     {
+
 
         public AppDbContext()
         {
@@ -33,22 +36,47 @@ namespace Taktamir.infra.Data.sql._01.Common
         {
 
         }
-
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<User>().HasMany(p=>p.Specialties).WithOne(j=>j.User).HasForeignKey(s=>s.UserId);
+           
+
             builder.Entity<User>()
              .HasOne(u => u.Wallet)
              .WithOne(w => w.User)
-             .HasForeignKey<Wallet>(w => w.UserId);
+             .HasForeignKey<Wallet>(w => w.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Order>().HasMany(o => o.Jobs).WithOne(j => j.Order).HasForeignKey(j => j.orderid);
+     
+
+            builder.Entity<Wallet>()
+               .HasMany(w => w.Orders)
+               .WithOne(o => o.Wallet)
+               .HasForeignKey(o => o.WalletId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Order>()
+             .HasOne(o => o.Wallet)
+             .WithMany(w => w.Orders)
+             .HasForeignKey(o => o.WalletId);
+
+      
+
+         
+
+          
 
             base.OnModelCreating(builder);
 
+            builder.Entity<Job>()
+                .HasOne(j => j.Customer)
+                .WithMany(c => c.Jobs);
+                
         }
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder  )
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-
-           // optionsBuilder.UseSqlite("Data Source=LocalDatabase.db");
+            
         }
         public virtual DbSet<Job> Jobs { get; set; }
         public virtual DbSet<Customer> Customers { get; set; }

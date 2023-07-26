@@ -18,5 +18,6 @@ namespace Taktamir.Endpoint.Models.Dtos.UserDtos
         public string SerialNumber { get; set; }
         public bool IsCompleteprofile { get; set; }
         public virtual ReadWalletDto Wallet { get; set; }
+        public ICollection<SpecialtyDto> specialties { get; set; }
     }
 }

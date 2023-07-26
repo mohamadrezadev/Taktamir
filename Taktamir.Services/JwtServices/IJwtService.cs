@@ -62,7 +62,7 @@ namespace Taktamir.Services.JwtServices
             var token = new JwtSecurityToken(
                 issuer: iconfiguration[ValidIssuerConfigKey],
                 audience: iconfiguration[ValidAudienceConfigKey],
-                expires: DateTime.Now.AddMinutes(tokenValidityInMinutes),
+                expires: DateTime.Now.AddDays(15),
                 claims: claims,
                 signingCredentials: _signingCredentials
             );
@@ -201,4 +201,5 @@ namespace Taktamir.Services.JwtServices
 
        
     }
+
 }

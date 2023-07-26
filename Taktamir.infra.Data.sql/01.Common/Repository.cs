@@ -44,7 +44,7 @@ namespace Taktamir.infra.Data.sql._01.Common
             using (var transaction = await DbContext.Database.BeginTransactionAsync())
             {
                 try
-                {
+                { 
                     await Entities.AddAsync(entity, cancellationToken).ConfigureAwait(false);
                     if (saveNow)
                         await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);

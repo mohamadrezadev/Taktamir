@@ -1,12 +1,8 @@
 ﻿using Kavenegar;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+using Taktamir.Core.Domain._08.Verifycodes;
 using Taktamir.framework;
 
 namespace Taktamir.Services.SmsServices
@@ -21,10 +17,12 @@ namespace Taktamir.Services.SmsServices
     public class SmsService : ISmsService
     {
         private readonly KavenegarConfig _kavenegarConfig;
+        private readonly IVerifycodeRepository _verifycodeRepository;
 
-        public SmsService(IOptions<KavenegarConfig> kavenegarConfig)
+        public SmsService(IOptions<KavenegarConfig> kavenegarConfig,IVerifycodeRepository verifycodeRepository)
         {
             _kavenegarConfig = kavenegarConfig.Value;
+            _verifycodeRepository = verifycodeRepository;
         }
         public async  Task<Tuple<bool, string>> SendLookup(string phonnumber)
         {
@@ -88,12 +86,21 @@ namespace Taktamir.Services.SmsServices
                 try
                 {
                     var result = JsonConvert.DeserializeObject<dynamic>(await client.GetStringAsync(verifyApiAddress));
-                    Console.WriteLine(result);
-                    return Tuple.Create(true,code);
+                   
+                    var verifycode = new Verifycode()
+                    {
+                        phone_number = phonnumber,
+                        code = code
+                    };
+                   var resultadd= await _verifycodeRepository.add_or_update_verifycode(verifycode);
+                    if (resultadd)
+                    {
+                        return Tuple.Create(true,code);
+                    }
+                    return Tuple.Create(false, "");
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e.Message);
                     return Tuple.Create(false,""); 
                 }
             }

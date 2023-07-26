@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Taktamir.Endpoint.Models.Dtos.Suppliess;
 
 namespace Taktamir.Endpoint.Models.Dtos.JobDtos
 {
@@ -11,6 +12,8 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
         public string Description { get; set; }
         public bool UsedTokcet { get; set; } = false;
         public bool Reservation { get; set; } = false;
+        public ICollection <SuppliessDto> suppliessDtos { get; set; }
 
     }
+   
 }

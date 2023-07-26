@@ -24,6 +24,7 @@ namespace Taktamir.Endpoint.Profiles
             CreateMap<ReadUserDto,User>().ReverseMap();
             CreateMap<UpdateUserDto,User>().ReverseMap();
             CreateMap<SpecialtyDto,Specialty>().ReverseMap();
+            CreateMap<ReadUserDto,User>().ReverseMap();
 
             
         }

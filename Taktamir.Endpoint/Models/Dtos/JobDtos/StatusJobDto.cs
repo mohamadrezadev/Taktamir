@@ -2,10 +2,7 @@
 {
     public enum StatusJobDto
     {
-        /// <summary>
-        /// کامل شده
-        /// </summary>
-        Completed = 1,
+  
         /// <summary>
         /// کنسل شده
         /// </summary>

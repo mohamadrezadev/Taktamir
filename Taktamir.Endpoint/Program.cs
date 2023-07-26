@@ -48,6 +48,61 @@ namespace Taktamir.Endpoint
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
+            //builder.Services.AddDbContext<AppDbContext>(options =>
+            //{
+            //    options.UseSqlite(builder.Configuration["sqliteconn"], b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
+            //    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+            //    options.EnableSensitiveDataLogging();
+            //});
+            builder.Services.AddDbContext<AppDbContext>(o =>
+            {
+                o.UseSqlServer(builder.Configuration["DefaultConnection"], b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
+                o.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+                o.EnableSensitiveDataLogging();
+            });
+            builder.Services.AddIdentity<User, Role>(option => 
+            {
+                option.SignIn.RequireConfirmedEmail = false;
+                option.Password.RequireDigit = false;
+                option.Password.RequireNonAlphanumeric = false;
+                option.Password.RequireUppercase = false;
+                option.Password.RequireLowercase = false;
+                option.User.RequireUniqueEmail = false;
+                option.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+                //Singing Settings
+                option.SignIn.RequireConfirmedEmail = false;
+                option.SignIn.RequireConfirmedPhoneNumber = false;
+                //Lockout Settings
+                //option.Lockout.MaxFailedAccessAttempts = 10;
+                //option.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+                option.Lockout.AllowedForNewUsers = false;
+            })
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
+            #region Authenticationjwt
+            builder.Services.AddAuthentication(opt => {
+                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(options => {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = "https://localhost:5001",
+                    ValidAudience = "https://localhost:5001",
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("JWTRefreshTokenHIGHsecuredPasswordVVVp1OH7Xzyr"))
+                };
+            });
+
+
+
+
+            #endregion
+
+            builder.Services.AddLogging();
+            builder.Services.AddHttpClient();
             builder.Services.AddHttpContextAccessor();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -69,7 +124,26 @@ namespace Taktamir.Endpoint
                         // Url = new Uri("https://example.com/license"),
                     }
                 });
-        
+                //c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                //{
+                //    Scheme = "Bearer",
+                //    BearerFormat = "JWT",
+                //    In = ParameterLocation.Header,
+                //    Name = "Authorization",
+                //    Description = "Bearer Authentication with JWT Token",
+                //    Type = SecuritySchemeType.Http
+                //});
+                //c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                //    {
+                //        new OpenApiSecurityScheme {
+                //            Reference = new OpenApiReference {
+                //                Id = "Bearer",
+                //                    Type = ReferenceType.SecurityScheme
+                //            }
+                //        },
+                //        new List < string > ()
+                //    }
+                //});
                 c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
                 {
                     Description = "Standard Authorization header using the Bearer scheme, e.g. \"Bearer {token} \"",
@@ -83,46 +157,8 @@ namespace Taktamir.Endpoint
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
                 c.IncludeXmlComments(xmlPath);
             });
-            builder.Services.AddLogging();
-            builder.Services.AddHttpClient();
-            builder.Services.AddDbContext<AppDbContext>(options =>
-            {
-                options.UseSqlite(builder.Configuration["sqliteconn"], b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
-                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-                options.EnableSensitiveDataLogging();
-            });
-
-            #region Authenticationjwt
-            // Adding Authentication
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-
-            // Adding Jwt Bearer
-            .AddJwtBearer(options =>
-            {
-                options.SaveToken = true;
-                options.RequireHttpsMetadata = false;
-                options.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ClockSkew = TimeSpan.Zero,
-
-                    ValidAudience = builder.Configuration["JWT:ValidAudience"],
-                    ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]))
-                };
-            });
-            #endregion
-            builder.Services.AddIdentity<User, Role>(o =>{})
-                .AddEntityFrameworkStores<AppDbContext>()
-                .AddDefaultTokenProviders();
+       
+        
            
             builder.Services.Configure<KavenegarConfig>(builder.Configuration.GetSection("Kavenegarinfo"));
             builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -136,10 +172,27 @@ namespace Taktamir.Endpoint
             builder.Services.AddScoped<IVerifycodeRepository, VerifycodeRepository>();
             builder.Services.AddScoped<ISmsService, SmsService>();
             builder.Services.AddScoped<IJwtService, JwtService>();
+            builder.Services.AddTransient<ITokenService, TokenService>();
+            builder.Services.AddCors(options =>
+            {
+                //options.AddDefaultPolicy(builder =>
+                //{
+                //    builder.SetIsOriginAllowed(_ => true)
+                //           .AllowAnyHeader()
+                //           .AllowAnyMethod();
 
+                    
+                //});
+                options.AddDefaultPolicy(builder =>
+                {
+                    builder.AllowAnyOrigin()
+                        .AllowAnyHeader()
+                        .AllowAnyMethod();
+                });
+            });
             var app = builder.Build();
-
-            
+            app.UseCors();
+            app.UseHttpsRedirection();
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -150,7 +203,8 @@ namespace Taktamir.Endpoint
 
             app.UseAuthentication();
             app.UseAuthorization();
-            app.MapControllers();
+            
+           app.MapControllers();
             //app.UseSentryTracing();
 
             app.Run();

@@ -9,7 +9,7 @@ namespace Taktamir.Core.Domain._06.Wallets
     {
         public Order()
         {
-            
+            this.Jobs = new List<Job>();
         }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -17,8 +17,11 @@ namespace Taktamir.Core.Domain._06.Wallets
         public double Total { get; set; }
         public double spent { get; set; }
 
-     
+        public int WalletId { get; set; }
         public  Wallet Wallet { get; set; }
-        public Job Jobs { get; set; }
+
+        public virtual ICollection<Job> Jobs { get; set; }
+        //public int JobId { get; set; }
+        //public  Job Job { get; set; }
     }
 }

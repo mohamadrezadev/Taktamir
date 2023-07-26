@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._4.Customers;
@@ -30,7 +31,15 @@ namespace Taktamir.Endpoint.Controllers
         public async Task<IActionResult> Get()
         {
             var jobs = await _jobRepository.Entities.Include(j => j.Customer).ToListAsync();
+            
             var result = _mapper.Map<List<ReadJobDto>>(jobs);
+            result.ForEach(item =>
+            { 
+                jobs.ForEach(j =>
+                {
+                   item.Customer= _mapper.Map<ReadCustomerDto>(j.Customer);
+                });
+            });
             return Ok(result);
            
         }
@@ -47,20 +56,16 @@ namespace Taktamir.Endpoint.Controllers
             return Ok(resutl);
         }
 
-        // POST api/<JobsController>
+        
         [HttpPost]
         public async Task<IActionResult> Post( CreateJobDto model,CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid) return  BadRequest(model);
-            var customer = _mapper.Map<Customer>(model.CustomerDto);
-            var newjob = _mapper.Map<Job>(model);         
-            await _customerRepository.AddAsync(customer, cancellationToken);
-            newjob.Customer= customer;
-            newjob.Customer.Id= customer.Id;
-           //await _jobRepository.AddAsync(newjob, cancellationToken);
-            await _jobRepository.AddAsync(newjob,cancellationToken);
+            var newjob = _mapper.Map<Job>(model); 
+            newjob.Customer = _mapper.Map<Customer>(model.CustomerDto);
+            await _jobRepository.AddAsync(newjob, cancellationToken);          
             return Created($"/api/Jobs/get/{newjob.Id}", newjob.Id);
         }
-
+       
     }
 }

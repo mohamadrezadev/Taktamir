@@ -23,6 +23,8 @@ namespace Taktamir.Core.Domain._03.Users
             IsLocked = false;
             IsCompleteprofile = false;
             this.Wallet=new Wallet();
+            IsConfirmedAccount = false;
+            
             
             
         }
@@ -45,12 +47,17 @@ namespace Taktamir.Core.Domain._03.Users
 
         public bool IsCompleteprofile { get; set; }
 
-        public string Refresh_Token { get; set; }
-
         public string Access_Token { get; set; }
-       
 
+        public string? RefreshToken { get; set; }
+
+        public bool IsConfirmedAccount { get; private set; }
+
+
+
+        public DateTime RefreshTokenExpiryTime { get; set; }
         public virtual ICollection<Specialty> Specialties { get; set; }
+      
 
         [ForeignKey("walletId")]
         public int walletId { get; set; }
@@ -58,8 +65,15 @@ namespace Taktamir.Core.Domain._03.Users
 
         public virtual ICollection<Message> Messages { get; set; }
        
+       
+        public void confirme(bool confirme)
+        {
+            this.IsConfirmedAccount = confirme;
+        }
+
 
     }
+
     public enum Roleuser
     {
         Admin=1,

@@ -8,4 +8,9 @@ namespace Taktamir.Endpoint.Models.Dtos.Suppliess
         public string Name { get; set; }
         public double Price { get; set; }
     }
+    public class SuppliessDto
+    {
+        public string Name { get; set; }
+        public double Price { get; set; }
+    }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._07.Suppliess;
@@ -17,7 +18,46 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         public JobRepository(AppDbContext dbContext) : base(dbContext)
         {
         }
-
+        public override async ValueTask<Job> GetByIdAsync(CancellationToken cancellationToken, params object[] ids)
+        {
+            using (var transaction = DbContext.Database.BeginTransaction())
+            {
+                try
+                {
+                    var result =await Entities.Include(p=>p.Customer).FirstOrDefaultAsync(p=>p.Id== (int)ids[0]);
+                    transaction.Commit();
+                    return result;
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+           
+        }
+        public async override Task AddAsync(Job entity, CancellationToken cancellationToken, bool saveNow = true)
+        {
+            using (var transaction = await DbContext.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    await DbContext.Customers.AddAsync(entity.Customer);
+                    DbContext.SaveChanges();
+                    await Entities.AddAsync(entity, cancellationToken).ConfigureAwait(false);
+                    if (saveNow)
+                        await DbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+                    transaction.Commit();
+                }
+                catch (Exception)
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+            
+        }
+        
         public async Task<int> AddNewJob(Job job)
         {
             //var exitjob=DbContext.Jobs.Any(p=>p.Id==job.Id);
@@ -102,36 +142,39 @@ namespace Taktamir.infra.Data.sql._02.Jobs
             return Task.FromResult(result);
         }
 
-        public Task<List<Job>> GetUserJobs(int userid)
-        {
-            var walletuser=DbContext.Wallets.Include(p=>p.Orders).FirstOrDefault(p=>p.User.Id==userid);
-            if (walletuser == null) throw new Exception("this id not wallet ");
-            var userJobs = walletuser.Orders.Select(o => o.Jobs).ToList();
-            //List<Job> UserJob = new List<Job>();
-            //var result = walletuser.Orders;
-            //foreach (var order in result)
-            //{
-            //    foreach (var item in order.Jobs) 
-            //    {
-            //        UserJob.Add(item);
-            //    }
-            //}
-            return Task.FromResult(userJobs);
+        //public Task<List<Job>> GetUserJobs(int userid)
+        //{
+        //    var walletuser=DbContext.Wallets.Include(p=>p.Orders).FirstOrDefault(p=>p.User.Id==userid);
+        //    if (walletuser == null) throw new Exception("this id not wallet ");
+        //   // var userJobs = walletuser.Orders.Select(o => o.Job).ToList();
+        //    //List<Job> UserJob = new List<Job>();
+        //    //var result = walletuser.Orders;
+        //    //foreach (var order in result)
+        //    //{
+        //    //    foreach (var item in order.Jobs) 
+        //    //    {
+        //    //        UserJob.Add(item);
+        //    //    }
+        //    //}
+        //    return Task.FromResult(userJobs);
             
-        }
+        //}
 
         public async Task JobbookingForUser(int userid,Job job)
         {
             var walletUser=DbContext.Wallets.FirstOrDefault(p=>p.User.Id==userid);
             job.StatusJob =(int) StatusJob.Doing;
-            job.User.Id = userid;
-            job.User=await DbContext.Users.FirstOrDefaultAsync(p=>p.Id==userid)?? null;
-            walletUser.Orders.ToList().ForEach(order => order.Jobs=job);
+            //job.User.Id = userid;
+            //job.User=await DbContext.Users.FirstOrDefaultAsync(p=>p.Id==userid)?? null;
+           // walletUser.Orders.ToList().ForEach(order => order.Job=job);
             await DbContext.SaveChangesAsync();
 
            
         }
 
-        
+        public Task<List<Job>> GetUserJobs(int userid)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

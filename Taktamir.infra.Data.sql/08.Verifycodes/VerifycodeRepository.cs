@@ -17,7 +17,7 @@ namespace Taktamir.infra.Data.sql._08.Verifycodes
         {
         }
 
-        public Task add_or_update_verifycode(Verifycode verifycode)
+        public async Task<bool> add_or_update_verifycode(Verifycode verifycode)
         {
             var isexist=DbContext.Verifycodes.Any(p=>p.phone_number==verifycode.phone_number);
             if (isexist)
@@ -25,12 +25,13 @@ namespace Taktamir.infra.Data.sql._08.Verifycodes
                 var updateverifycode = DbContext.Verifycodes.FirstOrDefault(p => p.phone_number == verifycode.phone_number);
                 updateverifycode.code = verifycode.code;
                 verifycode.DateTimeSendeCode = verifycode.DateTimeSendeCode;
-                DbContext.SaveChanges();
-                return Task.CompletedTask;
+                DbContext.Verifycodes.Update(updateverifycode);
+                await  DbContext.SaveChangesAsync();
+                return true;
             }
-            DbContext.Verifycodes.Add(verifycode);
-            DbContext.SaveChanges();
-            return Task.CompletedTask;
+           await DbContext.Verifycodes.AddAsync(verifycode);
+           await  DbContext.SaveChangesAsync();
+            return false;
         }
 
       

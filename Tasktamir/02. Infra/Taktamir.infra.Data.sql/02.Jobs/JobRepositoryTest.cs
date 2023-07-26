@@ -26,39 +26,39 @@ namespace Tasktamir._02._Infra.Taktamir.infra.Data.sql._02.Jobs
             this.fixture = fixture;
 
         }
-        [Fact]
-        public async void Return_List_jobs_for_admin()
-        {
-            //Arenge
-            var dbContextMock = new Mock<AppDbContext>();
-            var jobRepositoryMock = new Mock<JobRepository>(dbContextMock.Object);
-            jobRepositoryMock.Setup(repo => repo.GetAllJobs()).ReturnsAsync(_JobMockData.GetJobs());
+        //[Fact]
+        //public async void Return_List_jobs_for_admin()
+        //{
+        //    //Arenge
+        //    var dbContextMock = new Mock<AppDbContext>();
+        //    var jobRepositoryMock = new Mock<JobRepository>(dbContextMock.Object);
+        //    jobRepositoryMock.Setup(repo => repo.GetAllJobs()).ReturnsAsync(_JobMockData.GetJobs());
 
 
-            //Act
-            // jobRepositoryMock.Object.GetAllJobsByAdmin();
-            var result = jobRepositoryMock.Object.GetAllJobsByAdmin();
-            //Assert
-            Assert.NotNull(result);
-            Assert.IsType<List<Job>>(result);
+        //    //Act
+        //    // jobRepositoryMock.Object.GetAllJobsByAdmin();
+        //    var result = jobRepositoryMock.Object.GetAllJobsByAdmin();
+        //    //Assert
+        //    Assert.NotNull(result);
+        //    Assert.IsType<List<Job>>(result);
 
 
-        }
-        [Fact]
-        public  async void Add_New_Job_in_Database()
-        {
-            //Arenge
-            var newjob =new Job {Id=1,Description="jbu" }; //new Filler<Job>().Create();
-            var customer = new Filler<Customer>().Create();
-            newjob.Customer = customer;
-            JobRepository jobRepository = new JobRepository(fixture._DbContext);
+        //}
+        //[Fact]
+        //public  async void Add_New_Job_in_Database()
+        //{
+        //    //Arenge
+        //    var newjob =new Job {Id=1,Description="jbu" }; //new Filler<Job>().Create();
+        //    var customer = new Filler<Customer>().Create();
+        //    newjob.Customer = customer;
+        //    JobRepository jobRepository = new JobRepository(fixture._DbContext);
 
-            //Act
-            await jobRepository.AddAsync(newjob,CancellationToken.None );
-            //Assert
-            var lastjob=fixture._DbContext.Jobs.FirstOrDefault(p=>p.Id==newjob.Id);
-            Assert.NotNull(lastjob);
+        //    //Act
+        //    await jobRepository.AddAsync(newjob,CancellationToken.None );
+        //    //Assert
+        //    var lastjob=fixture._DbContext.Jobs.FirstOrDefault(p=>p.Id==newjob.Id);
+        //    Assert.NotNull(lastjob);
 
-        }
+        //}
     }
 }

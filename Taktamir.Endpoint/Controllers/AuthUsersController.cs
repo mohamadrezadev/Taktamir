@@ -15,6 +15,7 @@ using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._08.Verifycodes;
 using Taktamir.Endpoint.Models.Dtos.Common;
 using Taktamir.Endpoint.Models.Dtos.UserDtos;
+using Taktamir.Endpoint.Models.Dtos.WalletDtos;
 using Taktamir.Services.JwtServices;
 using Taktamir.Services.SmsServices;
 
@@ -35,10 +36,11 @@ namespace Taktamir.Endpoint.Controllers
         private readonly IJwtService _jwtService;
         private readonly ILogger<AuthUsersController> _logger;
         private readonly IMapper _mapper;
+        private readonly ITokenService _tokenService;
 
         public AuthUsersController(IVerifycodeRepository verifycodeRepository,ISmsService smsService,IUserRepository userRepository,
              UserManager<User> userManager, RoleManager<Role> roleManager,IJwtService jwtService ,ILogger<AuthUsersController> logger
-            ,IMapper mapper, IHttpContextAccessor httpContextAccessor)
+            ,IMapper mapper, IHttpContextAccessor httpContextAccessor, ITokenService tokenService)
         {
             _verifycodeRepository = verifycodeRepository;
             _smsService = smsService;
@@ -49,6 +51,8 @@ namespace Taktamir.Endpoint.Controllers
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
             _mapper = mapper;
+            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+
         }
         [HttpGet("signup_phone_number")]
         public async Task<IActionResult> signup_phone_number([Required] string phone_number,CancellationToken cancellationToken)
@@ -58,15 +62,10 @@ namespace Taktamir.Endpoint.Controllers
             if (!Request.QueryString.HasValue || phone_number.Length < 10) return BadRequest("phone number field is required!");
             var IsSendcode= await _smsService.SendVerifycode(phone_number);
             if (!IsSendcode.Item1) return Problem("An error occurred. Please try again",null,StatusCodes.Status503ServiceUnavailable);
-            var verifycode = new Verifycode()
-            {
-                phone_number = phone_number,
-                code=IsSendcode.Item2 
-            };
-            await _verifycodeRepository.add_or_update_verifycode(verifycode);
             return Ok($"Send Code to phone number :{phone_number}");
         }
-
+        
+    
         [HttpPost]
         public async Task<IActionResult> Verify_code(ConfirmMobileDto model,CancellationToken cancellationToken){
             var token = new Response_jwt();
@@ -89,32 +88,71 @@ namespace Taktamir.Endpoint.Controllers
                     SecurityStamp = Guid.NewGuid().ToString(),
                    
                 };
-                token = generateLoginToken(newuser);
-                newuser.Access_Token = token.Access_Token;
-                newuser.Refresh_Token = token.Refresh_Token;
-                await _userRepository.AddAsync(newuser,cancellationToken);
-                var createdrol = await _roleManager.CreateAsync(new Role() { Name = UserRoleApp.Technician, NormalizedName = UserRoleApp.Technician });
-                if (!createdrol.Succeeded)
+                var claimsregister = new List<Claim>
                 {
-                    foreach (var item in createdrol.Errors)
+                    new Claim("MobilePhone", newuser.PhoneNumber),
+                    new Claim("Name", newuser.UserName),
+                    new Claim("Id", newuser.Id.ToString()),
+                    new Claim(ClaimTypes.Role, UserRoleApp.Technician)
+                };
+                
+                newuser.Access_Token = _tokenService.GenerateAccessToken(claimsregister);
+                newuser.RefreshToken= _tokenService.GenerateRefreshToken();
+                newuser.RefreshTokenExpiryTime= DateTime.Now.AddDays(30);
+                await _userRepository.AddAsync(newuser,cancellationToken);
+                claimsregister.Add(new Claim(ClaimTypes.NameIdentifier, newuser.Id.ToString()));
+                var findrole = await _roleManager.Roles.FirstOrDefaultAsync(p => p.Name.Equals(UserRoleApp.Technician));
+                if (findrole == null)
+                {
+                    var createdrol = await _roleManager.CreateAsync(new Role() { Name = UserRoleApp.Technician, NormalizedName = UserRoleApp.Technician });
+                    if (!createdrol.Succeeded)
                     {
-                        st.Append($"{item.Code} {item.Description}");
+                        foreach (var item in createdrol.Errors)
+                        {
+                            st.Append($"{item.Code} {item.Description}");
+                        }
+                        Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        return Problem(st.ToString());
                     }
-                    Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+               
+               var res= await _userManager.AddToRoleAsync(newuser,UserRoleApp.Technician);
+                if (!res.Succeeded)
+                {
+                    foreach(var item in res.Errors)
+                    {
+                        st.Append(item);
+                    }
                     return Problem(st.ToString());
                 }
-                await _userManager.AddToRoleAsync(newuser,UserRoleApp.Technician);
                 token.Role = UserRoleApp.Technician;
-                var role = await _userManager.GetRolesAsync(finduser);
-                token.Role = role.ToString();
+                var role = await _userManager.GetRolesAsync(newuser);
+                token.Role = string.Concat(role.SelectMany(p => p));
+                token.Access_Token = newuser.Access_Token;
+                token.Refresh_Token = newuser.RefreshToken;
+                token.phone_number = newuser.PhoneNumber;
                 _logger.LogInformation($"created user{newuser}");
                 Response.StatusCode = (int)HttpStatusCode.UpgradeRequired;
                 return Created($"api/AuthUsers/",token);
             }
-            token = generateLoginToken(finduser);
-            finduser.Refresh_Token = token.Refresh_Token;
+           
+            var roles = await _userManager.GetRolesAsync(finduser);
+            token.Role = string.Concat(roles.SelectMany(p => p));
+            token.phone_number = finduser.PhoneNumber;
+            var claims = new List<Claim>
+            {   new Claim("MobilePhone", finduser.PhoneNumber),
+                new Claim("Name", finduser.UserName),
+                new Claim("Id", finduser.Id.ToString()),
+                new Claim("Role", token.Role),
+            };
+            token.Access_Token = _tokenService.GenerateAccessToken(claims);
+            token.Refresh_Token = finduser.RefreshToken;
+            if (DateTime.UtcNow > finduser.RefreshTokenExpiryTime)
+            {
+                Response.StatusCode =(int) HttpStatusCode.Unauthorized;
+                return Unauthorized("Token expired");
+            }
             finduser.Access_Token = token.Access_Token;
-            
             var resultUpdate = await _userManager.UpdateAsync(finduser);
             if (!resultUpdate.Succeeded)
             {
@@ -125,88 +163,56 @@ namespace Taktamir.Endpoint.Controllers
                 Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return Problem(st.ToString());
             }
-            var r= await _userManager.GetRolesAsync(finduser);
-           
-            token.Role= string.Concat(r.SelectMany(p => p));
+          
             if (!finduser.IsCompleteprofile)
             {
                 Response.StatusCode = (int)HttpStatusCode.UpgradeRequired;
                 return new JsonResult(token);
             }
             Response.StatusCode = (int)HttpStatusCode.OK;
+            
             return Ok(token);
         }
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> refreshtoken([Required] string refreshToken,CancellationToken cancellationToken)
         {
+            var response = new Response_jwt();
             if (string.IsNullOrEmpty(refreshToken))
             {
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return BadRequest("invalid refreshtoken");
             }
-            var userid = _jwtService.DecodeRefreshToken(refreshToken);
-            var finduser= await _userRepository.GetByIdAsync(cancellationToken, int.Parse(userid));
-            if (finduser == null) return NotFound("Not founded");
-            var Access_Token = _jwtService.CreateToken(finduser);
-            finduser.Access_Token = new JwtSecurityTokenHandler().WriteToken(Access_Token);
-            await _userRepository.UpdateAsync(finduser, cancellationToken);
-            var r = await _userManager.GetRolesAsync(finduser);
-
-           
-            var response = new Response_jwt()
+            var finduser =await _userRepository.Entities.FirstOrDefaultAsync(p => p.RefreshToken.Equals(refreshToken));
+            if (finduser == null) {
+                Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return BadRequest("invalid refreshtoken");
+            }
+            if (DateTime.UtcNow > finduser.RefreshTokenExpiryTime)
             {
-                Access_Token = finduser.Access_Token,
-                Refresh_Token = refreshToken,
-                phone_number = finduser.PhoneNumber,
-                Expiration = Access_Token.ValidTo,
-                Role= string.Concat(r.SelectMany(p => p))
+                finduser.RefreshToken = _tokenService.GenerateRefreshToken();
+                finduser.RefreshTokenExpiryTime = DateTime.Now.AddDays(30);
+            }
+            var roles = await _userManager.GetRolesAsync(finduser);
+            response.Role = string.Concat(roles.SelectMany(p => p));
+            response.phone_number = finduser.PhoneNumber;
+            var claims = new List<Claim>
+            {   new Claim("MobilePhone", finduser.PhoneNumber),
+                new Claim("Name", finduser.UserName),
+                new Claim("Id", finduser.Id.ToString()),
+                new Claim("Role", response.Role),
             };
+            response.Access_Token = _tokenService.GenerateAccessToken(claims);
+            await _userRepository.UpdateAsync(finduser, cancellationToken);
             Response.StatusCode = (int)HttpStatusCode.Created;
             return Ok(response);
         }
 
 
 
-        [HttpPut(nameof(Update_user))]
-        [Authorize]
-        public async Task<IActionResult> Update_user([FromBody] UpdateUserDto model,CancellationToken cancellationToken)
-        {
-            if (!ModelState.IsValid)return BadRequest($" model invalid {model}");
-            var findUser = await _userRepository.Entities.Include(p => p.Wallet)
-                .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
-            if (findUser == null) return NotFound("not Exist User");
-            findUser.Firstname= model.Firstname;
-            findUser.LastName= model.LastName;
-            findUser.Profile_url= model.Profile_url;
-            findUser.SerialNumber= model.SerialNumber;
-            findUser.Email= model.Email;
-            findUser.Update_at = DateTime.Now;
-            findUser.IsCompleteprofile = true;
-            findUser.Specialties= _mapper.Map<List<Specialty>>(model.specialties);
-            await _userRepository.UpdateAsync(findUser, cancellationToken);
-            var result = _mapper.Map<ReadUserDto>(findUser);
-            return Ok(result);
+       
 
-        }
-
-
-
-        private Response_jwt generateLoginToken(User user)
-        {
-            var JST = new JwtSecurityTokenHandler();
-            var Access_Token = _jwtService.CreateToken(user);
-            var refreshtoken = _jwtService.GenerateRefreshToken(user.Id.ToString());
-            var response = new Response_jwt()
-            {
-                Access_Token = JST.WriteToken(Access_Token),
-                Refresh_Token = JST.WriteToken(refreshtoken),
-                Expiration = Access_Token.ValidTo,
-                phone_number = user.PhoneNumber,
-            };
-            
-            return response;
-        }
+      
        
     }
 }

@@ -14,7 +14,7 @@ namespace Taktamir.Endpoint.Models.Dtos.WalletDtos
         public double spent { get; set; }
 
 
-        public ReadWalletDto Wallet { get; set; }
-        public ReadJobDto Jobs { get; set; }
+       // public ReadWalletDto Wallet { get; set; }
+        public ICollection<ReadJobDto> Jobs { get; set; }
     }
 }

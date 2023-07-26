@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
+using Taktamir.Endpoint.Models.Dtos.UserDtos;
 using Taktamir.infra.Data.sql._02.Jobs;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -24,19 +26,30 @@ namespace Taktamir.Endpoint.Controllers.Admin
         [HttpGet]
         public IActionResult Get()
         {
-            var jobs = _JobService.Entities.Include(p =>  p.Customer ).Include(p=>p.User).ToList();
-            var result=_mapper.Map<List<Job>>(jobs);
+            var jobs = _JobService.Entities.Include(p =>  p.Customer ).ToList();
+            var result=_mapper.Map<List<ReadJobDto>>(jobs);
+            jobs.ForEach(item =>
+            {
+                result.ForEach(itemdto =>
+                {
+                    itemdto.Customer=_mapper.Map<ReadCustomerDto>(item.Customer);
+                    itemdto.StatusJob=  ReadJobDto.SetStatusJob(item.StatusJob);
+                });
+                
+            });
             return Ok(result);
         }
         [HttpGet("{id}")]
-        public IActionResult Get(int id)
+        public async Task<IActionResult> Get(int id,CancellationToken cancellationToken)
         {
-            var job = _JobService.GetById(id); 
-            var result = _mapper.Map<Job>(job);
+            var job =await _JobService.GetByIdAsync(cancellationToken,id); 
+            var result = _mapper.Map<ReadJobDto>(job);
+            result.StatusJob=ReadJobDto.SetStatusJob(job.StatusJob);
+            result.Customer = _mapper.Map<ReadCustomerDto>(job.Customer);
             return Ok(result);
         }
 
-        // PUT api/<JobsController>/5
+    
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] ReadJobDto model, CancellationToken cancellationToken)
         {
