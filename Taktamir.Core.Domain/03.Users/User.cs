@@ -12,6 +12,7 @@ using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._06.Wallets;
+using Taktamir.Core.Domain._09.Chats;
 
 namespace Taktamir.Core.Domain._03.Users
 {
@@ -24,6 +25,9 @@ namespace Taktamir.Core.Domain._03.Users
             IsCompleteprofile = false;
             this.Wallet=new Wallet();
             IsConfirmedAccount = false;
+            Messages=new HashSet<Message>();
+            Chats=new HashSet<Chat>();
+            UserGroups = new HashSet<UserGroup>();
             
             
             
@@ -64,8 +68,9 @@ namespace Taktamir.Core.Domain._03.Users
         public virtual Wallet Wallet { get; set; }
 
         public virtual ICollection<Message> Messages { get; set; }
-       
-       
+        public virtual ICollection<Chat> Chats { get; set; }
+        public virtual ICollection<UserGroup> UserGroups { get; set; }
+
         public void confirme(bool confirme)
         {
             this.IsConfirmedAccount = confirme;
@@ -73,7 +78,6 @@ namespace Taktamir.Core.Domain._03.Users
 
 
     }
-
     public enum Roleuser
     {
         Admin=1,

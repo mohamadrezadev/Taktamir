@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.Core.Domain._03.Users;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
 using Taktamir.Endpoint.Models.Dtos.UserDtos;
@@ -11,6 +13,7 @@ using Taktamir.infra.Data.sql._02.Jobs;
 
 namespace Taktamir.Endpoint.Controllers.Admin
 {
+    [Authorize(Roles =UserRoleApp.Admin)]
     [Route("api/[controller]")]
     [ApiController]
     public class JobAdminController : ControllerBase
@@ -50,7 +53,8 @@ namespace Taktamir.Endpoint.Controllers.Admin
         }
 
     
-        [HttpPut("{id}")]
+      //  [HttpPut("{id}")]
+        [HttpPost("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] ReadJobDto model, CancellationToken cancellationToken)
         {
             if (id <= 0) return BadRequest("Invalid Id");

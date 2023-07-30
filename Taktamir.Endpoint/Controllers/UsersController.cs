@@ -68,7 +68,8 @@ namespace Taktamir.Endpoint.Controllers
 
 
         [Authorize]
-        [HttpPut(nameof(Update_user))]
+       // [HttpPut(nameof(Update_user))]
+        [HttpPost(nameof(Update_user))]
         public async Task<IActionResult> Update_user([FromBody] UpdateUserDto model, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid) return BadRequest($" model invalid {model}");
@@ -130,8 +131,9 @@ namespace Taktamir.Endpoint.Controllers
             return Ok(result);
         }
 
-        [HttpPut("Change_of_work_status")]
         [Authorize]
+        //[HttpPut("Change_of_work_status")]
+        [HttpPost("Change_of_work_status")]
         public async Task<IActionResult> Change_of_work_status(int orderid,int jobid, UpdateJobDto model, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid) return BadRequest(model);
@@ -144,7 +146,8 @@ namespace Taktamir.Endpoint.Controllers
             return Ok();
         }
         [Authorize]
-        [HttpPut("End_of_the_work")]
+       // [HttpPut("End_of_the_work")]
+        [HttpPost("End_of_the_work")]
         public async Task<IActionResult> End_of_the_work(int orderid,int jobid,UpdateJobDto model,CancellationToken cancellationToken)
         {
             var findUser = await _userRepository.Entities.Include(p => p.Wallet)

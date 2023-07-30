@@ -18,7 +18,7 @@ using Taktamir.infra.Data.sql._03.Users;
 
 namespace Taktamir.Endpoint.Controllers.Admin
 {
-    //[Authorize(Roles = UserRoleApp.Admin)]
+    [Authorize(Roles = UserRoleApp.Admin)]
     [Route("api/[controller]")]
     [ApiController]
     public class AdminUsersController : ControllerBase
@@ -37,7 +37,8 @@ namespace Taktamir.Endpoint.Controllers.Admin
             _mapper = mapper;
         }
  
-        [HttpPut("VerifyUser")]
+        //[HttpPut("VerifyUser")]
+        [HttpPost("VerifyUser")]
         public IActionResult VerifyUser(int userid)
         {
             var user = _userRepository.GetById(userid);
@@ -74,7 +75,8 @@ namespace Taktamir.Endpoint.Controllers.Admin
             return Ok(result);
         }
         //تایید حساب 
-        [HttpPut("User_account_verification")]
+        //[HttpPut("User_account_verification")]
+        [HttpPost("User_account_verification")]
         public async Task<IActionResult> User_account_verification(int UserId, CancellationToken  cancellationToken )
         {
             var FindUser = await _userRepository.GetByIdAsync(cancellationToken, UserId);
@@ -98,7 +100,8 @@ namespace Taktamir.Endpoint.Controllers.Admin
         }
 
         //تایید رزرو کار 
-        [HttpPut("Work_booking_confirmation")]
+        //[HttpPut("Work_booking_confirmation")]
+        [HttpPost("Work_booking_confirmation")]
         public async Task<IActionResult> Work_booking_confirmation(int idjob,CancellationToken cancellationToken)
         {
             var findjob=await _jobRepository.GetByIdAsync(cancellationToken,idjob);

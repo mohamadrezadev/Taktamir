@@ -21,21 +21,34 @@ using Microsoft.Extensions.Configuration;
 using Taktamir.Core.Domain._08.Verifycodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
+using Taktamir.Core.Domain._09.Chats;
 
 namespace Taktamir.infra.Data.sql._01.Common
 {
     public partial class AppDbContext : IdentityDbContext<User, Role, int>
     {
 
-
-        public AppDbContext()
-        {
-
-        }
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
 
         }
+
+        //public AppDbContext()
+        //{
+
+        //}
+        public virtual DbSet<Job> Jobs { get; set; }
+        public virtual DbSet<Customer> Customers { get; set; }
+        public virtual DbSet<Order> Orders { get; set; }
+        public virtual DbSet<Wallet> Wallets { get; set; }
+        public virtual DbSet<Message> Messages { get; set; }
+        public virtual DbSet<Supplies> Supplies { get; set; }
+        public virtual DbSet<Verifycode> Verifycodes { get; set; }
+        public virtual DbSet<Specialty> Specialties { get; set; }
+
+        public DbSet<Chat> Chats { get; set; }
+        public DbSet<ChatGroup> ChatGroups { get; set; }
+        public DbSet<UserGroup> UserGroups { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<User>().HasMany(p=>p.Specialties).WithOne(j=>j.User).HasForeignKey(s=>s.UserId);
@@ -61,34 +74,39 @@ namespace Taktamir.infra.Data.sql._01.Common
              .WithMany(w => w.Orders)
              .HasForeignKey(o => o.WalletId);
 
-      
-
-         
-
-          
-
-            base.OnModelCreating(builder);
 
             builder.Entity<Job>()
                 .HasOne(j => j.Customer)
                 .WithMany(c => c.Jobs);
+
+            builder.Entity<Message>()
+                .HasOne(m => m.Sender)
+                .WithMany(u => u.Messages)
+                .HasForeignKey(m => m.UserId);
+
+
+            builder.Entity<Chat>()
+                .HasOne(b => b.User)
+                .WithMany(b => b.Chats)
+                .HasForeignKey(b => b.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<UserGroup>()
+              .HasOne(b => b.User)
+              .WithMany(b => b.UserGroups)
+              .HasForeignKey(b => b.UserId)
+              .OnDelete(DeleteBehavior.Restrict);
+
+            base.OnModelCreating(builder);
                 
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             
         }
-        public virtual DbSet<Job> Jobs { get; set; }
-        public virtual DbSet<Customer> Customers { get; set; }
-        public virtual DbSet<Order> Orders { get; set; }
-        public virtual DbSet<Wallet> Wallets { get; set; }
-        public virtual DbSet<Message> Messages { get; set; }
-        public virtual DbSet<Supplies> Supplies { get; set; }
-        public virtual DbSet<Verifycode> Verifycodes  { get; set; }
-        public virtual DbSet<Specialty> Specialties  { get; set; }
+       
 
 
-        
 
 
 

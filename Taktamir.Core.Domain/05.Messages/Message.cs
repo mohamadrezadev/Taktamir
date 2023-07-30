@@ -1,4 +1,4 @@
-﻿using System;
+﻿ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,11 +11,12 @@ namespace Taktamir.Core.Domain._05.Messages
     public class Message: IEntity
     {
         public int Id { get; set; }
-        public string Content { get; set; }
+        public string username { get; set; }
+        public string  Text { get; set; }
         public DateTime Timestamp { get; set; }
-        public User FromUser { get; set; }
-        public int ToRoomId { get; set; }
-        public Room ToRoom { get; set; }
+
+        public int UserId { get; set; }
+        public virtual User Sender { get; set; }
     }
 
 }
