@@ -10,5 +10,5 @@ namespace Taktamir.Core.Domain._05.Messages
 {
     public interface IMessagesRepository: IRepository<Message>
     {
-    }
+    } 
 }

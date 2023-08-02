@@ -22,7 +22,7 @@ namespace Taktamir.infra.Data.sql._03.Users
             {
                 try
                 {
-                    var result = await Entities.Include(p=>p.Wallet).FirstOrDefaultAsync(p=>p.Id==(int)ids[0], cancellationToken);
+                    var result = await Entities.Include(p=>p.Wallet).Include(p=>p.Room).FirstOrDefaultAsync(p=>p.Id==(int)ids[0], cancellationToken);
                     transaction.Commit();
                     return result;
                 }

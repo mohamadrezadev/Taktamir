@@ -1,48 +1,61 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Taktamir.Core.Domain._03.Users;
-using Taktamir.Core.Domain._09.Chats;
+using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Endpoint.Hubs;
 using Taktamir.Endpoint.Models.Dtos.ChatDto;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Taktamir.Endpoint.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles =UserRoleApp.Admin)]
     public class ChatsController : ControllerBase
     {
+        private readonly IUserRepository _userRepository;
+        private readonly RoleManager<Role> _roleManager;
+        private readonly UserManager<User> _userManager;
         private readonly IHubContext<ChatHub> _hubContext;
+        private readonly IDictionary<string, UserConnection> _connections;
+        private readonly IRoomRepository _roomRepository;
 
-        public ChatsController(IHubContext<ChatHub> hubContext)
+        public ChatsController(IHubContext<ChatHub> hubContext, IUserRepository userRepository,
+            IDictionary<string, UserConnection> connections,IRoomRepository roomRepository,
+            UserManager<User>userManager,RoleManager<Role> roleManager)
         {
+            _userRepository = userRepository;
+            _roleManager = roleManager;
+            _userManager = userManager;
             _hubContext = hubContext;
+            _connections = connections;
+            _roomRepository = roomRepository;
+
         }
 
-        [Route("send")]
-        [HttpPost]
-        public async Task<IActionResult> SendRequest([FromBody] string username,string reciver,string text)
-        {
-            await _hubContext.Clients.Client(reciver).SendAsync("ReceiveOne", username,text);
-            return Ok();
-        }
-
-        [Route("receive")]
         [HttpGet]
-        public IActionResult Receive()
+        public async Task< IActionResult> GetAll()
         {
-            return Ok();
+           
+            var Rooms = await _roomRepository.Entities.ToListAsync();
+            return Ok(Rooms);
         }
-        [HttpPost]
-        [HubMethodName("SendMessage")]
-        public async Task SendMessage(string user, string message)
+      
+        private Task SendUsersConnected(string room)
         {
-            await _hubContext.Clients.All.SendAsync("ReceiveMessage", user, message);
+            var users = _connections.Values
+                .Where(c => c.Nameroom == room)
+                .Select(c => c.User);
+
+            return _hubContext.Clients.Group(room).SendAsync("UsersInRoom", users);
         }
-    
+
+
     }
 }

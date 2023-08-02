@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Taktamir.infra.Data.sql._01.Common;
 
@@ -11,9 +12,10 @@ using Taktamir.infra.Data.sql._01.Common;
 namespace Taktamir.infra.Data.sql.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230802114438_migrationsqlserver2")]
+    partial class migrationsqlserver2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -333,6 +335,9 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
+                    b.HasIndex("Roomid")
+                        .IsUnique();
+
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
@@ -379,19 +384,16 @@ namespace Taktamir.infra.Data.sql.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoomId"), 1L, 1);
 
+                    b.Property<int>("Adminid")
+                        .HasColumnType("int");
+
                     b.Property<string>("NameRoom")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
 
                     b.Property<string>("UsersId")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("RoomId");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
 
                     b.ToTable("Rooms");
                 });
@@ -598,6 +600,17 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Taktamir.Core.Domain._03.Users.User", b =>
+                {
+                    b.HasOne("Taktamir.Core.Domain._05.Messages.Room", "Room")
+                        .WithOne("User")
+                        .HasForeignKey("Taktamir.Core.Domain._03.Users.User", "Roomid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
+                });
+
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Message", b =>
                 {
                     b.HasOne("Taktamir.Core.Domain._05.Messages.Room", "Room")
@@ -611,17 +624,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("Room");
-                });
-
-            modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
-                {
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
-                        .WithOne("Room")
-                        .HasForeignKey("Taktamir.Core.Domain._05.Messages.Room", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
@@ -666,8 +668,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                 {
                     b.Navigation("Messages");
 
-                    b.Navigation("Room");
-
                     b.Navigation("Specialties");
 
                     b.Navigation("Wallet");
@@ -676,6 +676,8 @@ namespace Taktamir.infra.Data.sql.Migrations
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
                 {
                     b.Navigation("Messages");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>

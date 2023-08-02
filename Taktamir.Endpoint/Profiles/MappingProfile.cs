@@ -2,7 +2,6 @@
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
-using Taktamir.Core.Domain._09.Chats;
 using Taktamir.Core.Domain._4.Customers;
 using Taktamir.Endpoint.Models.Dtos.ChatDto;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
@@ -27,7 +26,7 @@ namespace Taktamir.Endpoint.Profiles
             CreateMap<UpdateUserDto,User>().ReverseMap();
             CreateMap<SpecialtyDto,Specialty>().ReverseMap();
             CreateMap<ReadUserDto,User>().ReverseMap();
-            CreateMap<CreateChatGroupDto,ChatGroup>().ReverseMap();
+          
 
 
             

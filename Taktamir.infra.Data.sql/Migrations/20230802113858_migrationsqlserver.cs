@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace Taktamir.infra.Data.sql.Migrations
 {
-    public partial class newmigrationsqlserver : Migration
+    public partial class migrationsqlserver : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -15,6 +15,7 @@ namespace Taktamir.infra.Data.sql.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    namerol = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -204,22 +205,24 @@ namespace Taktamir.infra.Data.sql.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Room",
+                name: "Rooms",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
+                    RoomId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AdminId = table.Column<int>(type: "int", nullable: true)
+                    NameRoom = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UsersId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Adminid = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Room", x => x.Id);
+                    table.PrimaryKey("PK_Rooms", x => x.RoomId);
                     table.ForeignKey(
-                        name: "FK_Room_AspNetUsers_AdminId",
-                        column: x => x.AdminId,
+                        name: "FK_Rooms_AspNetUsers_Adminid",
+                        column: x => x.Adminid,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -268,24 +271,26 @@ namespace Taktamir.infra.Data.sql.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Sender = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Reciver = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Text = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FromUserId = table.Column<int>(type: "int", nullable: true),
-                    ToRoomId = table.Column<int>(type: "int", nullable: false)
+                    RoomId = table.Column<int>(type: "int", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Messages", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Messages_AspNetUsers_FromUserId",
-                        column: x => x.FromUserId,
+                        name: "FK_Messages_AspNetUsers_UserId",
+                        column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Messages_Room_ToRoomId",
-                        column: x => x.ToRoomId,
-                        principalTable: "Room",
-                        principalColumn: "Id",
+                        name: "FK_Messages_Rooms_RoomId",
+                        column: x => x.RoomId,
+                        principalTable: "Rooms",
+                        principalColumn: "RoomId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -413,14 +418,14 @@ namespace Taktamir.infra.Data.sql.Migrations
                 column: "orderid");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_FromUserId",
+                name: "IX_Messages_RoomId",
                 table: "Messages",
-                column: "FromUserId");
+                column: "RoomId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Messages_ToRoomId",
+                name: "IX_Messages_UserId",
                 table: "Messages",
-                column: "ToRoomId");
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_WalletId",
@@ -428,9 +433,10 @@ namespace Taktamir.infra.Data.sql.Migrations
                 column: "WalletId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Room_AdminId",
-                table: "Room",
-                column: "AdminId");
+                name: "IX_Rooms_Adminid",
+                table: "Rooms",
+                column: "Adminid",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Specialties_UserId",
@@ -482,7 +488,7 @@ namespace Taktamir.infra.Data.sql.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "Room");
+                name: "Rooms");
 
             migrationBuilder.DropTable(
                 name: "Jobs");

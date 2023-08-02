@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
+using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Core.Domain._07.Suppliess;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
@@ -26,10 +27,11 @@ namespace Taktamir.Endpoint.Controllers
         private readonly ISuppliesRepository _suppliesRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRoomRepository _roomRepository;
 
         public UsersController(IUserRepository userRepository,IMapper mapper,
             IJobRepository jobRepository,IWalletRepository walletRepository, IHttpContextAccessor httpContextAccessor,
-            ISuppliesRepository suppliesRepository,IOrderRepository orderRepository)
+            ISuppliesRepository suppliesRepository,IOrderRepository orderRepository,IRoomRepository roomRepository)
         {
             _userRepository = userRepository;
             _mapper = mapper;
@@ -38,6 +40,7 @@ namespace Taktamir.Endpoint.Controllers
             _suppliesRepository = suppliesRepository;
             _orderRepository = orderRepository;
             _httpContextAccessor = httpContextAccessor;
+            _roomRepository = roomRepository;
         }
         /// <summary>
         /// Retrieves a user by ID.
@@ -75,7 +78,7 @@ namespace Taktamir.Endpoint.Controllers
             if (!ModelState.IsValid) return BadRequest($" model invalid {model}");
 
 
-            var findUser = await _userRepository.Entities.Include(p => p.Wallet)
+            var findUser = await _userRepository.Entities.Include(p => p.Wallet).Include(p=>p.Room)
                 .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
             if (findUser == null) return NotFound("not Exist User");
             findUser.Firstname = model.Firstname;
@@ -86,6 +89,14 @@ namespace Taktamir.Endpoint.Controllers
             findUser.Update_at = DateTime.Now;
             findUser.IsCompleteprofile = true;
             findUser.Specialties = _mapper.Map<List<Specialty>>(model.specialties);
+
+            var findroom = await _roomRepository.GetByIdAsync(cancellationToken, findUser.Room.RoomId);
+            if (findroom!=null)
+            {
+                findroom.NameRoom = $"{findUser.Firstname} {findUser.LastName}";
+               // await _roomRepository.UpdateAsync(findroom,cancellationToken);
+                findUser.Room = findroom;
+            }
             await _userRepository.UpdateAsync(findUser, cancellationToken);
             var result = _mapper.Map<ReadUserDto>(findUser);
             result.specialties = model.specialties;

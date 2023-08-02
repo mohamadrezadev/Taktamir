@@ -61,7 +61,7 @@ namespace Taktamir.Endpoint.Controllers
             if (!phone_number.IsValidMobile(oprator: OpratorType.AllOpprator)) return BadRequest("Invalid phone numbe");
             if (!Request.QueryString.HasValue || phone_number.Length < 10) return BadRequest("phone number field is required!");
             var IsSendcode= await _smsService.SendVerifycode(phone_number);
-            if (!IsSendcode.Item1) return Problem("An error occurred. Please try again",null,StatusCodes.Status503ServiceUnavailable);
+         //   if (!IsSendcode.Item1) return Problem("An error occurred. Please try again",null,StatusCodes.Status503ServiceUnavailable);
             return Ok($"Send Code to phone number :{phone_number}");
         }
         
@@ -75,7 +75,7 @@ namespace Taktamir.Endpoint.Controllers
             if (model.Code==null)return BadRequest("Invalid sms code ");
             var CheckVerificationCode = await _verifycodeRepository.Isvalidcode(model.Phone_number, model.Code);
             if (!CheckVerificationCode.Item1) return BadRequest("Invalid Code or phone Number ....!");
-            var finduser =await _userRepository.Entities.Include(p=>p.Wallet).FirstOrDefaultAsync(p=>p.PhoneNumber.Equals(model.Phone_number));
+            var finduser =await _userRepository.Entities.Include(p=>p.Wallet).Include(p=>p.Room).FirstOrDefaultAsync(p=>p.PhoneNumber.Equals(model.Phone_number));
             if (finduser == null)
             {
                 var newuser = new User()
@@ -93,14 +93,14 @@ namespace Taktamir.Endpoint.Controllers
                     new Claim("MobilePhone", newuser.PhoneNumber),
                     new Claim("Name", newuser.UserName),
                     new Claim("Id", newuser.Id.ToString()),
-                    new Claim(ClaimTypes.Role, UserRoleApp.Technician)
+                   
                 };
                 
-                newuser.Access_Token = _tokenService.GenerateAccessToken(claimsregister);
-                newuser.RefreshToken= _tokenService.GenerateRefreshToken();
-                newuser.RefreshTokenExpiryTime= DateTime.Now.AddDays(30);
+
                 await _userRepository.AddAsync(newuser,cancellationToken);
+               
                 claimsregister.Add(new Claim(ClaimTypes.NameIdentifier, newuser.Id.ToString()));
+                
                 var findrole = await _roleManager.Roles.FirstOrDefaultAsync(p => p.Name.Equals(UserRoleApp.Technician));
                 if (findrole == null)
                 {
@@ -116,7 +116,7 @@ namespace Taktamir.Endpoint.Controllers
                     }
                 }
                
-               var res= await _userManager.AddToRoleAsync(newuser,UserRoleApp.Technician);
+                var res= await _userManager.AddToRoleAsync(newuser,UserRoleApp.Technician);
                 if (!res.Succeeded)
                 {
                     foreach(var item in res.Errors)
@@ -125,9 +125,17 @@ namespace Taktamir.Endpoint.Controllers
                     }
                     return Problem(st.ToString());
                 }
+               
                 token.Role = UserRoleApp.Technician;
                 var role = await _userManager.GetRolesAsync(newuser);
-                token.Role = string.Concat(role.SelectMany(p => p));
+                foreach (var item in role)
+                {
+                    claimsregister.Add(new Claim(ClaimTypes.Role, item));
+                }
+                newuser.Access_Token = _tokenService.GenerateAccessToken(claimsregister);
+                newuser.RefreshToken = _tokenService.GenerateRefreshToken();
+                newuser.RefreshTokenExpiryTime = DateTime.Now.AddDays(30);
+                await _userRepository.UpdateAsync(newuser, cancellationToken);
                 token.Access_Token = newuser.Access_Token;
                 token.Refresh_Token = newuser.RefreshToken;
                 token.phone_number = newuser.PhoneNumber;
@@ -143,8 +151,12 @@ namespace Taktamir.Endpoint.Controllers
             {   new Claim("MobilePhone", finduser.PhoneNumber),
                 new Claim("Name", finduser.UserName),
                 new Claim("Id", finduser.Id.ToString()),
-                new Claim("Role", token.Role),
+                
             };
+            foreach (var item in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, item));
+            }
             token.Access_Token = _tokenService.GenerateAccessToken(claims);
             token.Refresh_Token = finduser.RefreshToken;
             if (DateTime.UtcNow > finduser.RefreshTokenExpiryTime)
@@ -183,7 +195,7 @@ namespace Taktamir.Endpoint.Controllers
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return BadRequest("invalid refreshtoken");
             }
-            var finduser =await _userRepository.Entities.FirstOrDefaultAsync(p => p.RefreshToken.Equals(refreshToken));
+            var finduser =await _userRepository.Entities.Include(p=>p.Wallet).Include(p=>p.Room).FirstOrDefaultAsync(p => p.RefreshToken.Equals(refreshToken));
             if (finduser == null) {
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
                 return BadRequest("invalid refreshtoken");
@@ -200,9 +212,14 @@ namespace Taktamir.Endpoint.Controllers
             {   new Claim("MobilePhone", finduser.PhoneNumber),
                 new Claim("Name", finduser.UserName),
                 new Claim("Id", finduser.Id.ToString()),
-                new Claim("Role", response.Role),
+                
             };
+            foreach (var item in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, item));
+            }
             response.Access_Token = _tokenService.GenerateAccessToken(claims);
+            response.Refresh_Token=finduser.RefreshToken;
             await _userRepository.UpdateAsync(finduser, cancellationToken);
             Response.StatusCode = (int)HttpStatusCode.Created;
             return Ok(response);

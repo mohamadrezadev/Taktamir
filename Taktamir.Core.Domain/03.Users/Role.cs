@@ -7,6 +7,6 @@ namespace Taktamir.Core.Domain._03.Users
 {
     public class Role : IdentityRole<int>, IEntity
     {
-      
+        public string   namerol { get; set; }
     }
 }

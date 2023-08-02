@@ -21,7 +21,7 @@ using Microsoft.Extensions.Configuration;
 using Taktamir.Core.Domain._08.Verifycodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
-using Taktamir.Core.Domain._09.Chats;
+
 
 namespace Taktamir.infra.Data.sql._01.Common
 {
@@ -41,18 +41,17 @@ namespace Taktamir.infra.Data.sql._01.Common
         public virtual DbSet<Customer> Customers { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
         public virtual DbSet<Wallet> Wallets { get; set; }
-        public virtual DbSet<Message> Messages { get; set; }
         public virtual DbSet<Supplies> Supplies { get; set; }
         public virtual DbSet<Verifycode> Verifycodes { get; set; }
         public virtual DbSet<Specialty> Specialties { get; set; }
 
-        public DbSet<Chat> Chats { get; set; }
-        public DbSet<ChatGroup> ChatGroups { get; set; }
-        public DbSet<UserGroup> UserGroups { get; set; }
+        public virtual DbSet<Message> Messages { get; set; }
+        public virtual DbSet<Room> Rooms { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<User>().HasMany(p=>p.Specialties).WithOne(j=>j.User).HasForeignKey(s=>s.UserId);
-           
+            builder.Entity<User>().HasOne(u => u.Room).WithOne(r => r.User).HasForeignKey<Room>(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<User>()
              .HasOne(u => u.Wallet)
@@ -79,23 +78,10 @@ namespace Taktamir.infra.Data.sql._01.Common
                 .HasOne(j => j.Customer)
                 .WithMany(c => c.Jobs);
 
-            builder.Entity<Message>()
-                .HasOne(m => m.Sender)
-                .WithMany(u => u.Messages)
-                .HasForeignKey(m => m.UserId);
 
-
-            builder.Entity<Chat>()
-                .HasOne(b => b.User)
-                .WithMany(b => b.Chats)
-                .HasForeignKey(b => b.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            builder.Entity<UserGroup>()
-              .HasOne(b => b.User)
-              .WithMany(b => b.UserGroups)
-              .HasForeignKey(b => b.UserId)
-              .OnDelete(DeleteBehavior.Restrict);
+            builder.Entity<Room>().HasMany(r => r.Messages).WithOne(m => m.Room).HasForeignKey(m => m.RoomId);
+            builder.Entity<Room>().Property(r => r.UsersId)
+                .HasConversion(v => string.Join(',', v), v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList());
 
             base.OnModelCreating(builder);
                 

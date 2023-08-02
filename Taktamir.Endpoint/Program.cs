@@ -11,12 +11,11 @@ using System.Reflection;
 using System.Text;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
-using Taktamir.Core.Domain._03.Users.UserGroups;
+
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Core.Domain._07.Suppliess;
 using Taktamir.Core.Domain._08.Verifycodes;
-using Taktamir.Core.Domain._09.Chats;
 using Taktamir.Core.Domain._4.Customers;
 using Taktamir.Endpoint.Hubs;
 using Taktamir.Endpoint.Profiles;
@@ -24,13 +23,11 @@ using Taktamir.framework;
 using Taktamir.infra.Data.sql._01.Common;
 using Taktamir.infra.Data.sql._02.Jobs;
 using Taktamir.infra.Data.sql._03.Users;
-using Taktamir.infra.Data.sql._03.Users.UserGroups;
 using Taktamir.infra.Data.sql._04.Customers;
 using Taktamir.infra.Data.sql._05.Messages;
 using Taktamir.infra.Data.sql._06.Wallets;
 using Taktamir.infra.Data.sql._07.Suppliess;
 using Taktamir.infra.Data.sql._08.Verifycodes;
-using Taktamir.infra.Data.sql._09.Chats;
 using Taktamir.Services.JwtServices;
 using Taktamir.Services.SmsServices;
 
@@ -49,7 +46,7 @@ namespace Taktamir.Endpoint
             }).UseNLog();
 
             // Add services to the container.
-           builder.Services.AddSignalR();
+           
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -61,7 +58,7 @@ namespace Taktamir.Endpoint
             //});
             builder.Services.AddDbContext<AppDbContext>(o =>
             {
-                o.UseSqlServer(builder.Configuration["DefaultConnection"], b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
+                o.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
                 o.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
                 o.EnableSensitiveDataLogging();
             });
@@ -99,13 +96,25 @@ namespace Taktamir.Endpoint
                     ValidAudience = "https://localhost:5001",
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("JWTRefreshTokenHIGHsecuredPasswordVVVp1OH7Xzyr"))
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context => {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken)
+                            && path.StartsWithSegments("/kitchen"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
 
 
 
             #endregion
-            builder.Services.AddSignalR();
             builder.Services.AddLogging();
             builder.Services.AddHttpClient();
             builder.Services.AddHttpContextAccessor();
@@ -175,46 +184,59 @@ namespace Taktamir.Endpoint
             builder.Services.AddScoped<IMessagesRepository, MessagesRepository>();
             builder.Services.AddScoped<IOrderRepository, OrdersRepository>();
             builder.Services.AddScoped<IVerifycodeRepository, VerifycodeRepository>();
-            builder.Services.AddScoped<IChatRepository, ChatRepository>();
-            builder.Services.AddScoped<IUserGroupRepository, UserGroupRepository>();
-            builder.Services.AddScoped<IChatGroupRespository, ChatGroupRespository>();
-          
+            builder.Services.AddScoped<IVerifycodeRepository, VerifycodeRepository>();
+            builder.Services.AddScoped<IRoomRepository, RoomRepository>();
+        
+            builder.Services.AddSingleton<IDictionary<string, UserConnection>>(new Dictionary<string, UserConnection>());
+
             builder.Services.AddScoped<ISmsService, SmsService>();
             builder.Services.AddScoped<IJwtService, JwtService>();
             builder.Services.AddTransient<ITokenService, TokenService>();
 
-           builder.Services.AddCors(options =>
+            //builder.Services.AddCors(options =>
+            // {
+            //     options.AddPolicy("CorsPolicy", builder =>
+            //     {
+            //         builder
+            //             .AllowAnyMethod()
+            //             .AllowAnyHeader()
+            //             .WithOrigins("http://localhost:5173", "http://localhost:3006")
+            //             .AllowCredentials();
+            //     });
+            //     //options.AddPolicy("CorsPolicy", builder =>
+            //     //{
+            //     //    builder.AllowAnyMethod()
+            //     //           .AllowAnyHeader()
+            //     //           .WithOrigins("http://localhost:3006")
+            //     //           .AllowCredentials();
+            //     //});
+            // });
+            builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
             {
-                options.AddPolicy("CorsPolicy", builder =>
-                {
-                    builder.AllowAnyMethod()
-                           .AllowAnyHeader()
-                           .WithOrigins("http://localhost:3006")
-                           .AllowCredentials();
-                });
-            });
+                builder
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .WithOrigins("http://localhost:5173", "http://localhost:3006", " http://localhost:5173/");
+            }));
+            builder.Services.AddSignalR();
 
             var app = builder.Build();
             app.UseRouting();
-
-            app.UseHttpsRedirection();
+            app.UseCors("CorsPolicy");
             app.UseSwagger();
-           
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My service");
                 c.RoutePrefix = string.Empty;  // Set Swagger UI at apps root
 
             });
-            app.UseCors("CorsPolicy");
-
+            //app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseAuthorization();
-            
             app.MapControllers();
             app.MapHub<ChatHub>("/chats");
             //app.UseSentryTracing();
-
             app.Run();
         }
     }

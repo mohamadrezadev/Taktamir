@@ -1,11 +1,14 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using SQLitePCL;
 using System.Net.WebSockets;
 using System.Security.Principal;
+using System.Text;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
@@ -26,36 +29,80 @@ namespace Taktamir.Endpoint.Controllers.Admin
         private readonly IUserRepository _userRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly IJobRepository _jobRepository;
+        private readonly RoleManager<Role> _roleManager;
+        private readonly UserManager<User> _userManager;
         private readonly IMapper _mapper;
 
         public AdminUsersController(IUserRepository userRepository,IMapper mapper,
-            IOrderRepository orderRepository,IJobRepository jobRepository)
+            IOrderRepository orderRepository,IJobRepository jobRepository
+            ,RoleManager<Role> roleManager,UserManager<User> userManager)
         {
             _userRepository = userRepository;
             _orderRepository = orderRepository;
             _jobRepository = jobRepository;
+            _roleManager = roleManager;
+            _userManager = userManager;
             _mapper = mapper;
         }
- 
+        [AllowAnonymous]
+        [HttpGet("UpgradeAccounttoAdmin")]
+        public async Task<IActionResult> UpgradeAccounttoAdmin(int userid,CancellationToken cancellationToken)
+        {
+            var st = new StringBuilder();
+            var user =await _userRepository.GetByIdAsync(cancellationToken, userid);
+            if (user == null) return NotFound("user notFound");
+            var findRoleadmin=await _roleManager.FindByNameAsync(UserRoleApp.Admin);
+            
+            
+            if (findRoleadmin == null)
+            {
+               var res= await _roleManager.CreateAsync(new Role() { Name = UserRoleApp.Admin, NormalizedName = UserRoleApp.Admin });
+               if (!res.Succeeded)
+                {
+                    foreach (var item in res.Errors)
+                    {
+                        st.Append(item);
+                    }
+                    return Problem(st.ToString());
+                }
+            }
+            var result = await _userManager.AddToRoleAsync(user, UserRoleApp.Admin);
+            if (!result.Succeeded)
+            {
+                foreach (var item in result.Errors)
+                {
+                    st.Append(item);
+                }
+                return Problem(st.ToString());
+            }
+
+            return Ok("Add Role to this Account");
+        }
         //[HttpPut("VerifyUser")]
         [HttpPost("VerifyUser")]
         public IActionResult VerifyUser(int userid)
         {
-            var user = _userRepository.GetById(userid);
-            if (user == null) return NotFound("User not found");
-            user.confirme(true);
-            _userRepository.Update(user);
-            return Ok("verify user Sucssesfuly");
+            if(  Request.HttpContext.User.Identity.IsAuthenticated && Request.HttpContext.User.IsInRole(UserRoleApp.Admin))
+            {
+                var user = _userRepository.GetById(userid);
+                if (user == null) return NotFound("User not found");
+                user.confirme(true);
+                _userRepository.Update(user);
+                return Ok("verify user Sucssesfuly");
+            }
+            return Forbid();
+            
         }
         //همه کاربران 
         [HttpGet("AllUsers")]
         public async  Task<IActionResult> GetAllusers()
         {
-            var users =await _userRepository.Entities.Include(p=>p.Wallet).ToListAsync();
-            if (users.Count()<=0) return NotFound("not Yet Users Active Account");
-           
+            var users = await _userRepository.Entities.Include(p => p.Wallet).ToListAsync();
+            if (users.Count() <= 0) return NotFound("not Yet Users Active Account");
+
             var result = _mapper.Map<List<ReadUserDto>>(users);
             return Ok(result);
+           
         
         }
         //کاربران تایید نشده

@@ -12,8 +12,8 @@ using Taktamir.infra.Data.sql._01.Common;
 namespace Taktamir.infra.Data.sql.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230730195300_newmig2")]
-    partial class newmig2
+    [Migration("20230802113858_migrationsqlserver")]
+    partial class migrationsqlserver
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -191,6 +191,9 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("namerol")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
@@ -332,29 +335,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Taktamir.Core.Domain._03.Users.UserGroup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
-
-                    b.Property<int>("GroupId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserGroups");
-                });
-
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Message", b =>
                 {
                     b.Property<int>("Id")
@@ -363,46 +343,56 @@ namespace Taktamir.infra.Data.sql.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("Content")
+                    b.Property<string>("Reciver")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("FromUserId")
+                    b.Property<int>("RoomId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Sender")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("ToRoomId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FromUserId");
+                    b.HasIndex("RoomId");
 
-                    b.HasIndex("ToRoomId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("RoomId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoomId"), 1L, 1);
 
-                    b.Property<int?>("AdminId")
+                    b.Property<int>("Adminid")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("NameRoom")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.Property<string>("UsersId")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("AdminId");
+                    b.HasKey("RoomId");
 
-                    b.ToTable("Room");
+                    b.HasIndex("Adminid")
+                        .IsUnique();
+
+                    b.ToTable("Rooms");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
@@ -498,70 +488,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Verifycodes");
-                });
-
-            modelBuilder.Entity("Taktamir.Core.Domain._09.Chats.Chat", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
-
-                    b.Property<string>("ChatBody")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("GroupId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Chats");
-                });
-
-            modelBuilder.Entity("Taktamir.Core.Domain._09.Chats.ChatGroup", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
-
-                    b.Property<string>("GroupTitle")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("GroupToken")
-                        .HasMaxLength(110)
-                        .HasColumnType("nvarchar(110)");
-
-                    b.Property<string>("ImageName")
-                        .HasMaxLength(110)
-                        .HasColumnType("nvarchar(110)");
-
-                    b.Property<bool>("IsPrivate")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("ReceiverId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("ReceiverId");
-
-                    b.ToTable("ChatGroups");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._4.Customers.Customer", b =>
@@ -671,49 +597,30 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Taktamir.Core.Domain._03.Users.UserGroup", b =>
-                {
-                    b.HasOne("Taktamir.Core.Domain._09.Chats.ChatGroup", "ChatGrop")
-                        .WithMany("UserGroups")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
-                        .WithMany("UserGroups")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ChatGrop");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Message", b =>
                 {
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "FromUser")
+                    b.HasOne("Taktamir.Core.Domain._05.Messages.Room", "Room")
                         .WithMany("Messages")
-                        .HasForeignKey("FromUserId");
-
-                    b.HasOne("Taktamir.Core.Domain._05.Messages.Room", "ToRoom")
-                        .WithMany("Messages")
-                        .HasForeignKey("ToRoomId")
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("FromUser");
+                    b.HasOne("Taktamir.Core.Domain._03.Users.User", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("UserId");
 
-                    b.Navigation("ToRoom");
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
                 {
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "Admin")
-                        .WithMany()
-                        .HasForeignKey("AdminId");
+                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
+                        .WithOne("Room")
+                        .HasForeignKey("Taktamir.Core.Domain._05.Messages.Room", "Adminid")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Admin");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
@@ -749,42 +656,6 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Navigation("Job");
                 });
 
-            modelBuilder.Entity("Taktamir.Core.Domain._09.Chats.Chat", b =>
-                {
-                    b.HasOne("Taktamir.Core.Domain._09.Chats.ChatGroup", "CharGroup")
-                        .WithMany("Chats")
-                        .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
-                        .WithMany("Chats")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CharGroup");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Taktamir.Core.Domain._09.Chats.ChatGroup", b =>
-                {
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
-                        .WithMany()
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "Receiver")
-                        .WithMany()
-                        .HasForeignKey("ReceiverId");
-
-                    b.Navigation("Receiver");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Taktamir.Core.Domain._01.Jobs.Job", b =>
                 {
                     b.Navigation("Supplies");
@@ -792,13 +663,11 @@ namespace Taktamir.infra.Data.sql.Migrations
 
             modelBuilder.Entity("Taktamir.Core.Domain._03.Users.User", b =>
                 {
-                    b.Navigation("Chats");
-
                     b.Navigation("Messages");
 
-                    b.Navigation("Specialties");
+                    b.Navigation("Room");
 
-                    b.Navigation("UserGroups");
+                    b.Navigation("Specialties");
 
                     b.Navigation("Wallet");
                 });
@@ -816,13 +685,6 @@ namespace Taktamir.infra.Data.sql.Migrations
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Wallet", b =>
                 {
                     b.Navigation("Orders");
-                });
-
-            modelBuilder.Entity("Taktamir.Core.Domain._09.Chats.ChatGroup", b =>
-                {
-                    b.Navigation("Chats");
-
-                    b.Navigation("UserGroups");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._4.Customers.Customer", b =>

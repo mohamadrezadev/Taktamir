@@ -12,7 +12,6 @@ using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._05.Messages;
 using Taktamir.Core.Domain._06.Wallets;
-using Taktamir.Core.Domain._09.Chats;
 
 namespace Taktamir.Core.Domain._03.Users
 {
@@ -26,9 +25,7 @@ namespace Taktamir.Core.Domain._03.Users
             this.Wallet=new Wallet();
             IsConfirmedAccount = false;
             Messages=new HashSet<Message>();
-            Chats=new HashSet<Chat>();
-            UserGroups = new HashSet<UserGroup>();
-            
+            Room = new Room();
             
             
         }
@@ -68,8 +65,9 @@ namespace Taktamir.Core.Domain._03.Users
         public virtual Wallet Wallet { get; set; }
 
         public virtual ICollection<Message> Messages { get; set; }
-        public virtual ICollection<Chat> Chats { get; set; }
-        public virtual ICollection<UserGroup> UserGroups { get; set; }
+
+        public int Roomid { get; set; }
+        public virtual Room Room { get; set; }
 
         public void confirme(bool confirme)
         {

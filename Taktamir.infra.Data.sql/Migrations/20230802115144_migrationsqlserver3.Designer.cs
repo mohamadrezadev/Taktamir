@@ -12,8 +12,8 @@ using Taktamir.infra.Data.sql._01.Common;
 namespace Taktamir.infra.Data.sql.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230729135720_newmigrationsqlserver")]
-    partial class newmigrationsqlserver
+    [Migration("20230802115144_migrationsqlserver3")]
+    partial class migrationsqlserver3
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -191,6 +191,9 @@ namespace Taktamir.infra.Data.sql.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("namerol")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
@@ -300,6 +303,9 @@ namespace Taktamir.infra.Data.sql.Migrations
                     b.Property<DateTime>("RefreshTokenExpiryTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Roomid")
+                        .HasColumnType("int");
+
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
 
@@ -340,46 +346,56 @@ namespace Taktamir.infra.Data.sql.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("Content")
+                    b.Property<string>("Reciver")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("FromUserId")
+                    b.Property<int>("RoomId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Sender")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Text")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("ToRoomId")
+                    b.Property<int?>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FromUserId");
+                    b.HasIndex("RoomId");
 
-                    b.HasIndex("ToRoomId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("RoomId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoomId"), 1L, 1);
 
-                    b.Property<int?>("AdminId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
+                    b.Property<string>("NameRoom")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
-                    b.HasIndex("AdminId");
+                    b.Property<string>("UsersId")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.ToTable("Room");
+                    b.HasKey("RoomId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Rooms");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
@@ -586,28 +602,28 @@ namespace Taktamir.infra.Data.sql.Migrations
 
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Message", b =>
                 {
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "FromUser")
+                    b.HasOne("Taktamir.Core.Domain._05.Messages.Room", "Room")
                         .WithMany("Messages")
-                        .HasForeignKey("FromUserId");
-
-                    b.HasOne("Taktamir.Core.Domain._05.Messages.Room", "ToRoom")
-                        .WithMany("Messages")
-                        .HasForeignKey("ToRoomId")
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("FromUser");
+                    b.HasOne("Taktamir.Core.Domain._03.Users.User", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("UserId");
 
-                    b.Navigation("ToRoom");
+                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._05.Messages.Room", b =>
                 {
-                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "Admin")
-                        .WithMany()
-                        .HasForeignKey("AdminId");
+                    b.HasOne("Taktamir.Core.Domain._03.Users.User", "User")
+                        .WithOne("Room")
+                        .HasForeignKey("Taktamir.Core.Domain._05.Messages.Room", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("Admin");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Taktamir.Core.Domain._06.Wallets.Order", b =>
@@ -651,6 +667,8 @@ namespace Taktamir.infra.Data.sql.Migrations
             modelBuilder.Entity("Taktamir.Core.Domain._03.Users.User", b =>
                 {
                     b.Navigation("Messages");
+
+                    b.Navigation("Room");
 
                     b.Navigation("Specialties");
 
