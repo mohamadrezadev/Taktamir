@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Taktamir.Endpoint.Models.Dtos.Suppliess;
+using Taktamir.framework.Common.JobsUtill;
 
 namespace Taktamir.Endpoint.Models.Dtos.JobDtos
 {
@@ -7,7 +8,7 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
     {
         public string Name_Device { get; set; }
         public string Problems { get; set; }
-        public StatusJobDto StatusJob { get; set; }
+        public StatusJob StatusJob { get; set; }
         [MaxLength(200)]
         public string Description { get; set; }
         public bool UsedTokcet { get; set; } = false;
@@ -18,7 +19,7 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
     public class ChangestatusJob
     {
         public string Description { get; set; }
-        public StatusJobDto StatusJobDto { get; set; }
+        public StatusJob StatusJobDto { get; set; }
 
     }
    

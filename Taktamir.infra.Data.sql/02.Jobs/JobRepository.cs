@@ -2,15 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using Taktamir.Core.Domain._01.Common;
-using Taktamir.Core.Domain._01.Jobs;
-using Taktamir.Core.Domain._03.Users;
-using Taktamir.Core.Domain._07.Suppliess;
-using Taktamir.infra.Data.sql._01.Common;
 
+using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.Core.Domain._07.Suppliess;
+using Taktamir.framework.Common.JobsUtill;
+using Taktamir.infra.Data.sql._01.Common;
+using Taktamir.framework.Common.JobsUtill;
 namespace Taktamir.infra.Data.sql._02.Jobs
 {
     public class JobRepository : Repository<Job>, IJobRepository
@@ -91,7 +88,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         {
             var job=DbContext.Jobs.FirstOrDefault(p=>p.Id==idjob);
             if (job == null) throw new Exception("Not Found Job .....!");
-            job.StatusJob = (int)statusjob;
+            job.StatusJob = statusjob;
             DbContext.SaveChanges();
             return Task.FromResult(job);
            
@@ -103,7 +100,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
            var job=DbContext.Jobs.FirstOrDefault(p=>p.Id==idjob);
            if (job == null) throw new Exception("Not Found Job .....!");
            
-           job.StatusJob = (int)statusJob;
+           job.StatusJob = statusJob;
            job.Reservation = true;
            await DbContext.SaveChangesAsync();
 
@@ -123,7 +120,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         }
         public Task<List<Job>> GetAllJobsByAdmin(int pageIndex, int pageSize)
         {
-            var query = DbContext.Jobs.Where(p => p.StatusJob != (int)StatusJob.waiting);
+            var query = DbContext.Jobs.Where(p => p.StatusJob != StatusJob.waiting);
 
             var result = query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
 
@@ -138,7 +135,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
 
         public Task<List<Job>> GetJobwaiting()
         {
-            var result=DbContext.Jobs.Where(p=>p.StatusJob==(int) StatusJob.waiting).ToList();
+            var result=DbContext.Jobs.Where(p=>p.StatusJob==StatusJob.waiting).ToList();
             return Task.FromResult(result);
         }
 
@@ -163,7 +160,7 @@ namespace Taktamir.infra.Data.sql._02.Jobs
         public async Task JobbookingForUser(int userid,Job job)
         {
             var walletUser=DbContext.Wallets.FirstOrDefault(p=>p.User.Id==userid);
-            job.StatusJob =(int) StatusJob.Doing;
+            job.StatusJob =StatusJob.Doing;
             //job.User.Id = userid;
             //job.User=await DbContext.Users.FirstOrDefaultAsync(p=>p.Id==userid)?? null;
            // walletUser.Orders.ToList().ForEach(order => order.Job=job);

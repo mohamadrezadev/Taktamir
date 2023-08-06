@@ -2,6 +2,7 @@
 using System.Security.Principal;
 using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._07.Suppliess;
+using Taktamir.framework.Common.JobsUtill;
 
 namespace Taktamir.Core.Domain._01.Jobs
 {

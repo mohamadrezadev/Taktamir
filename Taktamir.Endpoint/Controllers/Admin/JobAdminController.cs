@@ -7,6 +7,7 @@ using Taktamir.Core.Domain._03.Users;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
 using Taktamir.Endpoint.Models.Dtos.UserDtos;
+using Taktamir.framework.Common;
 using Taktamir.infra.Data.sql._02.Jobs;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -36,8 +37,8 @@ namespace Taktamir.Endpoint.Controllers.Admin
                 result.ForEach(itemdto =>
                 {
                     itemdto.Customer=_mapper.Map<ReadCustomerDto>(item.Customer);
-                    itemdto.StatusJob=  ReadJobDto.SetStatusJob(item.StatusJob);
-                    itemdto.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)item.ReservationStatus);
+                    itemdto.StatusJob= JobsUtills.SetStatusJob((int) item.StatusJob);
+                    itemdto.ReservationStatusResult = JobsUtills.SetReservationStatus((int)item.ReservationStatus);
                 });
                 
             });
@@ -48,8 +49,8 @@ namespace Taktamir.Endpoint.Controllers.Admin
         {
             var job =await _JobService.GetByIdAsync(cancellationToken,id); 
             var result = _mapper.Map<ReadJobDto>(job);
-            result.StatusJob=ReadJobDto.SetStatusJob(job.StatusJob);
-            result.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)job.ReservationStatus);
+            result.StatusJob=JobsUtills.SetStatusJob((int)job.StatusJob);
+            result.ReservationStatusResult = JobsUtills.SetReservationStatus((int)job.ReservationStatus);
             result.Customer = _mapper.Map<ReadCustomerDto>(job.Customer);
             return Ok(result);
         }

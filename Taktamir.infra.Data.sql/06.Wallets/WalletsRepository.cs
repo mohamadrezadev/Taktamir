@@ -2,11 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
+using Taktamir.framework.Common;
+using Taktamir.framework.Common.JobsUtill;
 using Taktamir.infra.Data.sql._01.Common;
+using Taktamir.infra.Data.sql._03.Users;
 
 namespace Taktamir.infra.Data.sql._06.Wallets
 {
@@ -16,28 +21,9 @@ namespace Taktamir.infra.Data.sql._06.Wallets
         {
         }
 
-        //public  Task<bool> AddNewOrder(int walletid, Order order)
-        //{
-        //    var wallet =  DbContext.Wallets.SingleOrDefault(p => p.Id == walletid);
-        //    if (wallet == null) throw new Exception("Wallet not found");
-
-        //    if (order == null) throw new Exception("Order cannot be null");
-
-        //    try
-        //    {
-        //        wallet.Orders.Add(order);
-        //         DbContext.SaveChanges();
-        //        return Task.FromResult(true);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.ToString());
-        //        return Task.FromResult(false);
-        //    }
-           
-        //}
+        
   
-    public async Task<bool> AddNewOrder(int walletId, Order order)
+        public async Task<bool> AddNewOrder(int walletId, Order order)
         {
             var wallet = await DbContext.Wallets.FindAsync(walletId);
 
@@ -80,6 +66,27 @@ namespace Taktamir.infra.Data.sql._06.Wallets
         {
             var wallet=await DbContext.Wallets.Include(p => p.Orders).FirstOrDefaultAsync(p => p.User.Id == userid);
             return wallet.Orders.ToList();
+        }
+
+        public async Task<Tuple<List<User>, PaginationMetadata>> GetAll_Work_pending_Orders(int page = 1, int pageSize = 10)
+        {
+
+            var query = DbContext.Users.Include(w => w.Wallet)
+                .ThenInclude(o => o.Orders)
+                .ThenInclude(p => p.OrderJobs
+                .Where(p => p.Job.ReservationStatus.Equals(ReservationStatus.ReservedByTec)|| p.Job.ReservationStatus.Equals(ReservationStatus.ConfirmeByidmin)))
+                .ThenInclude(p => p.Job).ThenInclude(p => p.Customer);
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users,paginationMetadata);
+
         }
 
         public Task<Order> GetOrderDetails(int orderid)

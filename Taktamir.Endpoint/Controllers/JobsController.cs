@@ -7,6 +7,7 @@ using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._4.Customers;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
+using Taktamir.framework.Common;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -38,7 +39,7 @@ namespace Taktamir.Endpoint.Controllers
                 jobs.ForEach(j =>
                 {
                     item.Customer= _mapper.Map<ReadCustomerDto>(j.Customer);
-                    item.ReservationStatusResult = ReadJobDto.SetReservationStatus((int) j.ReservationStatus);
+                    item.ReservationStatusResult = JobsUtills.SetReservationStatus((int) j.ReservationStatus);
                 });
             });
             return Ok(result);
@@ -54,7 +55,7 @@ namespace Taktamir.Endpoint.Controllers
             var findjob=await _jobRepository.GetJobBtid(id);
 
             var resutl=_mapper.Map<ReadJobDto>(findjob);
-            resutl.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)findjob.ReservationStatus);
+            resutl.ReservationStatusResult = JobsUtills.SetReservationStatus((int)findjob.ReservationStatus);
             resutl.Customer=_mapper.Map<ReadCustomerDto>(resutl.Customer);
             return Ok(resutl);
         }
