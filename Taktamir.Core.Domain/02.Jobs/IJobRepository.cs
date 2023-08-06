@@ -2,12 +2,15 @@
 using System.Security.Principal;
 using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._07.Suppliess;
+using Taktamir.framework.Common;
+using Taktamir.framework.Common.JobsUtill;
 
 namespace Taktamir.Core.Domain._01.Jobs
 {
     public interface IJobRepository : IRepository<Job>
     {
-       Task<Job> GetJobBtid(int id);
+        Task<Tuple<List<Job>, PaginationMetadata>> GetAllJobsAsync(int page = 1, int pageSize = 10);
+        Task<Job> GetJobBtid(int id);
 
         /// <summary>
         /// افزودن لوازم برای کار انجام شده 

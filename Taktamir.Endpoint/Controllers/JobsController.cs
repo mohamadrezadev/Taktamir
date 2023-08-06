@@ -1,12 +1,16 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._4.Customers;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
+using Taktamir.framework.Common;
+using Taktamir.framework.Common.JobsUtill;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -28,20 +32,25 @@ namespace Taktamir.Endpoint.Controllers
         }
         // GET: api/<JobsController>
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get(int page = 1, int pageSize = 10)
+        
         {
-            var jobs = await _jobRepository.Entities.Include(j => j.Customer).ToListAsync();
-            
-            var result = _mapper.Map<List<ReadJobDto>>(jobs);
-            result.ForEach(item =>
-            { 
-                jobs.ForEach(j =>
-                {
-                    item.Customer= _mapper.Map<ReadCustomerDto>(j.Customer);
-                    item.ReservationStatusResult = ReadJobDto.SetReservationStatus((int) j.ReservationStatus);
-                });
-            });
-            return Ok(result);
+            var result = await _jobRepository.GetAllJobsAsync(page,pageSize);
+           
+
+            var response =new List<ReadJobDto>();
+            foreach (var item in result.Item1)
+            {
+
+                var dto = new ReadJobDto();
+                dto = _mapper.Map<ReadJobDto>(item);
+                dto.Customer = _mapper.Map<ReadCustomerDto>(item.Customer);
+                dto.ReservationStatusResult = JobsUtills.SetReservationStatus((int)item.ReservationStatus);
+                response.Add(dto);
+            }
+            Response.StatusCode = (int)HttpStatusCode.OK;
+            var res = new { PaginationData = result.Item2, Jobs = response};
+            return Ok(res);
            
         }
 
@@ -54,7 +63,7 @@ namespace Taktamir.Endpoint.Controllers
             var findjob=await _jobRepository.GetJobBtid(id);
 
             var resutl=_mapper.Map<ReadJobDto>(findjob);
-            resutl.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)findjob.ReservationStatus);
+            resutl.ReservationStatusResult = JobsUtills.SetReservationStatus((int)findjob.ReservationStatus);
             resutl.Customer=_mapper.Map<ReadCustomerDto>(resutl.Customer);
             return Ok(resutl);
         }
@@ -65,6 +74,7 @@ namespace Taktamir.Endpoint.Controllers
         {
             if (!ModelState.IsValid) return  BadRequest(model);
             var newjob = _mapper.Map<Job>(model); 
+            newjob.ReservationStatus = ReservationStatus.WatingforReserve;
             newjob.Customer = _mapper.Map<Customer>(model.CustomerDto);
 
             await _jobRepository.AddAsync(newjob, cancellationToken);          

@@ -16,7 +16,7 @@ namespace Taktamir.Core.Domain._06.Wallets
         public int Id { get; set; }
         public double Total { get; set; }
         public double spent { get; set; }
-
+        public string Description { get; set; }
         public int WalletId { get; set; }
         public  Wallet Wallet { get; set; }
 

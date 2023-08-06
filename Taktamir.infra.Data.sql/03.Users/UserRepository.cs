@@ -5,9 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Taktamir.Core.Domain._01.Common;
+using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
+using Taktamir.framework.Common;
 using Taktamir.infra.Data.sql._01.Common;
+using Taktamir.infra.Data.sql._06.Wallets;
 
 namespace Taktamir.infra.Data.sql._03.Users
 {
@@ -74,6 +77,72 @@ namespace Taktamir.infra.Data.sql._03.Users
             DbContext.SaveChanges();
             return Task.FromResult(true);
         }
-        
+
+        public async Task<Tuple<List<User>, PaginationMetadata>> GetAllUsersAsync(int page = 1, int pageSize = 10)
+        {
+            var totalCount = await DbContext.Users.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var users = await DbContext.Users
+                .Include(p => p.Wallet)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users, paginationMetadata);
+
+           
+        }
+
+        public async Task<Tuple<List<User>, PaginationMetadata>> Unverified_users(int page = 1, int pageSize = 10)
+        {
+            var totalCount = await DbContext.Users.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            var users = await DbContext.Users
+                .Where(p => !p.IsConfirmedAccount)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users, paginationMetadata);
+        }
+
+        public async Task<Tuple<List<User>, PaginationMetadata>> Verified_user_account(int page = 1, int pageSize = 10)
+        {
+            var totalCount = await DbContext.Users.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            var users = await DbContext.Users
+                .Where(p => p.IsConfirmedAccount)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users, paginationMetadata);
+        }
+
+        public async Task<Tuple<Wallet, PaginationMetadata>> JobsUser(int walletId, int page = 1, int pageSize = 10)
+        {
+            
+            var totalCount = await DbContext.OrderJobs.Where(p => p.Order.Wallet.Id == walletId).CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var walletuser = await DbContext.Wallets
+                .Include(p => p.Orders)
+                    .ThenInclude(p => p.OrderJobs)
+                        .ThenInclude(p => p.Job)
+                            .ThenInclude(p => p.Customer)
+                .FirstOrDefaultAsync(p => p.Id == walletId);
+            var paginateddata= walletuser.Orders
+                 .Skip((page - 1) * pageSize)
+                 .Take(pageSize)
+                 .ToList();
+
+            walletuser.Orders.Clear();
+            walletuser.Orders = paginateddata;
+
+
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(walletuser, paginationMetadata);
+        }
     }
 }

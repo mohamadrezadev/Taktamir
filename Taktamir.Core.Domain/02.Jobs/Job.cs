@@ -12,6 +12,7 @@ using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.Core.Domain._07.Suppliess;
 using Taktamir.Core.Domain._4.Customers;
+using Taktamir.framework.Common.JobsUtill;
 
 namespace Taktamir.Core.Domain._01.Jobs
 {
@@ -30,7 +31,7 @@ namespace Taktamir.Core.Domain._01.Jobs
         public int Id { get; set; }
         public string Name_Device { get; set; }
         public string Problems { get; set; }
-        public int StatusJob { get; set; }
+        public StatusJob StatusJob { get; set; }
         public string Description { get; set; }
         public bool usTagged { get; set; }
         public bool Reservation { get; set; }
@@ -46,12 +47,6 @@ namespace Taktamir.Core.Domain._01.Jobs
         public virtual Customer Customer { get; set; }
 
     }
-    public enum ReservationStatus
-    { 
-        WatingforReserve=0,
-        ReservedByTec=1,
-        Pending=2,       
-        ConfirmeByidmin=3,
-    }
+    
 
 }

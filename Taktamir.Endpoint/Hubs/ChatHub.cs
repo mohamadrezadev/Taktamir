@@ -49,7 +49,7 @@ namespace Taktamir.Endpoint.Hubs
             var mobile = Context.User.FindFirstValue("MobilePhone");
             var user = await _userRepository.Entities.FirstOrDefaultAsync(p => p.PhoneNumber == mobile.ToString());
             var room = await _roomRepository.Entities.Include(p=>p.User).ThenInclude(w=>w.Wallet).Include(p=>p.Messages).FirstOrDefaultAsync(p => p.NameRoom.Equals(NameRoom));
-            var isroleadmin = await _roleManager.RoleExistsAsync(UserRoleApp.Admin);
+            var isroleadmin = await _userManager.IsInRoleAsync(user ,UserRoleApp.Admin);
             if (room == null)
                 return;
             
@@ -64,7 +64,7 @@ namespace Taktamir.Endpoint.Hubs
             if (isroleadmin) newmessage.Sender = "Admin";
             else
             {
-                newmessage.Sender = user.Firstname + user.LastName;
+                newmessage.Sender =$"{user.Firstname} {user.LastName}";
             }
 
 
@@ -77,9 +77,10 @@ namespace Taktamir.Endpoint.Hubs
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
             };
             newmessage.Room = null;
-
+           
             var messageJson = JsonConvert.SerializeObject(newmessage, serializerSettings);
-            await Clients.Group(room.NameRoom).SendAsync("notification", $"پیام جدید از {user.Firstname} {user.LastName}  ");
+            var msgnotif = JsonConvert.SerializeObject(new { user.Firstname, user.LastName,newmessage.Sender },serializerSettings);
+            await Clients.Group(room.NameRoom).SendAsync("notification",msgnotif);
            // await Clients.Group(room.NameRoom).SendAsync("AllMessage", room.Messages.SelectMany(p => p.Text).ToList());
             await Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", $"{user.Firstname}{user.LastName}", messageJson);
 
@@ -96,7 +97,6 @@ namespace Taktamir.Endpoint.Hubs
 
 
         [Authorize (Roles =UserRoleApp.Technician)]
-        
         public async Task JoinRoom()
         {
             
@@ -130,13 +130,26 @@ namespace Taktamir.Endpoint.Hubs
 
             try
             {
-
                 await Groups.AddToGroupAsync(Context.ConnectionId, findroom.NameRoom);
-                await Clients.Group(findUser.Room.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findUser.Firstname + findUser.LastName} has joined room");
+                // await Clients.Group(findroom.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findadmin.Firstname + findadmin.LastName} has joined room");
+                var messageList = findroom.Messages.ToList();
+               // _connections[Context.ConnectionId] = findroom;
+                var serializerSettings = new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                };
+                var messageJson = JsonConvert.SerializeObject(messageList, serializerSettings);
+                await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", messageJson);
+                //await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p => p.Text).ToList());
+                await SendUsersConnected(findroom.NameRoom);
+                
+                
+                //await Groups.AddToGroupAsync(Context.ConnectionId, findroom.NameRoom);
+                //await Clients.Group(findUser.Room.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findUser.Firstname + findUser.LastName} has joined room");
               
-                await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p=>p.Text).ToList());
-                //await Clients.Others.SendAsync("ReceiveMessage", _botUser, $"{findUser.Firstname + findUser.LastName} has joined chat");
-                await SendUsersConnected(findUser.Room.NameRoom);
+                //await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p=>p.Text).ToList());
+                ////await Clients.Others.SendAsync("ReceiveMessage", _botUser, $"{findUser.Firstname + findUser.LastName} has joined chat");
+                //await SendUsersConnected(findUser.Room.NameRoom);
             }
             catch (Exception ex)
             {
@@ -160,7 +173,7 @@ namespace Taktamir.Endpoint.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, findroom.NameRoom);
                // await Clients.Group(findroom.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findadmin.Firstname + findadmin.LastName} has joined room");
                 var messageList = findroom.Messages.ToList();
-                _connections[Context.ConnectionId] = findroom;
+               // _connections[Context.ConnectionId] = findroom;
                 var serializerSettings = new JsonSerializerSettings
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
