@@ -28,6 +28,7 @@ namespace Taktamir.Core.Domain._03.Users
             Room = new Room();
             
             
+            
         }
 
         public string Firstname { get; set; }

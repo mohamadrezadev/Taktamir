@@ -11,6 +11,7 @@ namespace Taktamir.Endpoint.Models.Dtos.UserDtos
         public int Id { get; set; }
         public string Firstname { get; set; }
         public string LastName { get; set; }
+        public string PhoneNumber { get; set; }
         public string Profile_url { get; set; }
         public DateTime Create_at { get; set; }
         public DateTime Update_at { get; set; }
@@ -20,4 +21,6 @@ namespace Taktamir.Endpoint.Models.Dtos.UserDtos
         public virtual ReadWalletDto Wallet { get; set; }
         public ICollection<SpecialtyDto> specialties { get; set; }
     }
+
+
 }

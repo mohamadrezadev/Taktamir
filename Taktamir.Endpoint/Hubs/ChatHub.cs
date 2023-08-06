@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Validations;
+using Newtonsoft.Json;
 using System.Linq;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -19,14 +21,16 @@ namespace Taktamir.Endpoint.Hubs
         private readonly IUserRepository _userRepository;
         private IRoomRepository _roomRepository;
         private readonly UserManager<User> _userManager;
-        private readonly IDictionary<string, UserConnection> _connections;
+        private readonly IDictionary<string, Room> _connections;
         private IHttpContextAccessor _httpContextAccessor;
         private readonly string _botUser;
         private readonly IMessagesRepository _messagesRepository;
+        private readonly RoleManager<Role> _roleManager;
 
         public ChatHub(IUserRepository userRepository,
-            UserManager<User> userManager, IDictionary<string, UserConnection> connections,
-            IHttpContextAccessor httpContextAccessor, IRoomRepository roomRepository, IMessagesRepository messagesRepository)
+            UserManager<User> userManager, IDictionary<string, Room> connections,
+            IHttpContextAccessor httpContextAccessor, IRoomRepository roomRepository,
+            IMessagesRepository messagesRepository,RoleManager<Role> roleManager)
         {
             _userRepository = userRepository;
             _roomRepository = roomRepository;
@@ -35,6 +39,7 @@ namespace Taktamir.Endpoint.Hubs
             _httpContextAccessor = httpContextAccessor;
             _botUser = "MyChat Bot";
             _messagesRepository = messagesRepository;
+            _roleManager = roleManager;
         }
 
 
@@ -44,22 +49,39 @@ namespace Taktamir.Endpoint.Hubs
             var mobile = Context.User.FindFirstValue("MobilePhone");
             var user = await _userRepository.Entities.FirstOrDefaultAsync(p => p.PhoneNumber == mobile.ToString());
             var room = await _roomRepository.Entities.Include(p=>p.User).ThenInclude(w=>w.Wallet).Include(p=>p.Messages).FirstOrDefaultAsync(p => p.NameRoom.Equals(NameRoom));
+            var isroleadmin = await _roleManager.RoleExistsAsync(UserRoleApp.Admin);
             if (room == null)
                 return;
-           
+            
             var newmessage = new Message()
             {
                 Room = room,
                 Text = message,
                 Timestamp = DateTime.Now,
                 RoomId=room.RoomId,
+                
             };
+            if (isroleadmin) newmessage.Sender = "Admin";
+            else
+            {
+                newmessage.Sender = user.Firstname + user.LastName;
+            }
+
+
             room.Messages.Add(newmessage);
             await _roomRepository.UpdateAsync(room, CancellationToken.None);
             var userIds = room.UsersId.ToList();
-            await Clients.Group(room.NameRoom).SendAsync("notification", $"new message from {user.Firstname} {user.LastName} ");
+            //msgdto
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+            };
+            newmessage.Room = null;
+
+            var messageJson = JsonConvert.SerializeObject(newmessage, serializerSettings);
+            await Clients.Group(room.NameRoom).SendAsync("notification", $"پیام جدید از {user.Firstname} {user.LastName}  ");
            // await Clients.Group(room.NameRoom).SendAsync("AllMessage", room.Messages.SelectMany(p => p.Text).ToList());
-            await Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", $"{user.Firstname}{user.LastName}", $"{newmessage.Text}");
+            await Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", $"{user.Firstname}{user.LastName}", messageJson);
 
           
           
@@ -136,8 +158,16 @@ namespace Taktamir.Endpoint.Hubs
                     await Clients.Caller.SendAsync("Erorr", "not found room");
                 
                 await Groups.AddToGroupAsync(Context.ConnectionId, findroom.NameRoom);
-                await Clients.Group(findroom.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findadmin.Firstname + findadmin.LastName} has joined room");
-                await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p => p.Text).ToList());
+               // await Clients.Group(findroom.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findadmin.Firstname + findadmin.LastName} has joined room");
+                var messageList = findroom.Messages.ToList();
+                _connections[Context.ConnectionId] = findroom;
+                var serializerSettings = new JsonSerializerSettings
+                {
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+                };
+                var messageJson = JsonConvert.SerializeObject(messageList, serializerSettings);
+                await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", messageJson);
+                //await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p => p.Text).ToList());
                 await SendUsersConnected(findroom.NameRoom);
 
             }
@@ -147,6 +177,17 @@ namespace Taktamir.Endpoint.Hubs
             }
            
 
+        }
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            if (_connections.TryGetValue(Context.ConnectionId, out Room room))
+            {
+                _connections.Remove(Context.ConnectionId);
+                Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{room.User.Firstname+room.User.LastName} has left");
+                SendUsersConnected(room.NameRoom);
+            }
+
+            return base.OnDisconnectedAsync(exception);
         }
         public Task SendUsersConnected(string room)
         {

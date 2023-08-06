@@ -6,12 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using SQLitePCL;
+using System.Collections.Generic;
+using System.Net;
 using System.Net.WebSockets;
 using System.Security.Principal;
 using System.Text;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
+using Taktamir.Endpoint.Models.Dtos.JobDtos;
 using Taktamir.Endpoint.Models.Dtos.UserDtos;
 using Taktamir.Endpoint.Models.Dtos.WalletDtos;
 using Taktamir.infra.Data.sql._02.Jobs;
@@ -31,10 +34,12 @@ namespace Taktamir.Endpoint.Controllers.Admin
         private readonly IJobRepository _jobRepository;
         private readonly RoleManager<Role> _roleManager;
         private readonly UserManager<User> _userManager;
+        private readonly IWalletRepository _walletRepository;
         private readonly IMapper _mapper;
 
         public AdminUsersController(IUserRepository userRepository,IMapper mapper,
-            IOrderRepository orderRepository,IJobRepository jobRepository
+            IOrderRepository orderRepository,IJobRepository jobRepository,
+            IWalletRepository walletRepository 
             ,RoleManager<Role> roleManager,UserManager<User> userManager)
         {
             _userRepository = userRepository;
@@ -42,9 +47,9 @@ namespace Taktamir.Endpoint.Controllers.Admin
             _jobRepository = jobRepository;
             _roleManager = roleManager;
             _userManager = userManager;
+            _walletRepository = walletRepository;
             _mapper = mapper;
         }
-        [AllowAnonymous]
         [HttpGet("UpgradeAccounttoAdmin")]
         public async Task<IActionResult> UpgradeAccounttoAdmin(int userid,CancellationToken cancellationToken)
         {
@@ -79,7 +84,7 @@ namespace Taktamir.Endpoint.Controllers.Admin
             return Ok("Add Role to this Account");
         }
         //[HttpPut("VerifyUser")]
-        [HttpPost("VerifyUser")]
+        [HttpPost("VerifyAccountUser")]
         public IActionResult VerifyUser(int userid)
         {
             if(  Request.HttpContext.User.Identity.IsAuthenticated && Request.HttpContext.User.IsInRole(UserRoleApp.Admin))
@@ -137,13 +142,59 @@ namespace Taktamir.Endpoint.Controllers.Admin
         [HttpGet("Work_pending_approval")]
         public async Task<IActionResult> Work_pending_approval()
         {
-            var users = await _userRepository.Entities.Include(w => w.Wallet)
-                .ThenInclude(o => o.Orders)
-                .ThenInclude(j => j.Jobs.Where(j=>j.StatusJob==(int)StatusJob.waiting))
-                .ThenInclude(c => c.Customer).ToListAsync();
+            //Where(p => p.Job.ReservationStatus.Equals(ReservationStatus.ReservedByTec)
 
-            var result=_mapper.Map<List<ReadUserDto>>(users);
-            return Ok(result);
+
+            var users = await _userRepository.Entities.Include(w => w.Wallet)
+                .ThenInclude(o => o.Orders).ThenInclude(p=>p.OrderJobs)
+                .ThenInclude(p=>p.Job).ThenInclude(p=>p.Customer).ToListAsync();
+            
+            var resultUsers=new List<ReadUserDto>();
+            foreach (var user in users)
+            {
+                var userdto = _mapper.Map<ReadUserDto>(user);
+
+                foreach (var order in user.Wallet.Orders)
+                {
+                    var orderdto = new ReadOrderDto(); // Create a new instance for each order
+
+                    orderdto.Total = order.Total;
+                    orderdto.Id = order.Id;
+
+                    foreach (var job in order.OrderJobs)
+                    {
+                        var jobdto = _mapper.Map<ReadJobDto>(job.Job);
+                        orderdto.JobsOrder.Add(jobdto);
+                    }
+
+                    userdto.Wallet.Orders.Add(orderdto);
+                }
+
+                resultUsers.Add(userdto);
+            }
+            //foreach (var user in users)
+            //{
+            //    var userdto = _mapper.Map<ReadUserDto>(user);
+            //    var orderdto = new ReadOrderDto();
+
+            //    foreach (var order in user.Wallet.Orders)
+            //    { 
+            //        orderdto.Total= order.Total;
+            //        orderdto.Id= order.Id;
+            //        foreach (var job in order.OrderJobs)
+            //        {
+            //            var jobdto = _mapper.Map<ReadJobDto>(job.Job);
+            //            orderdto.JobsOrder.Add(jobdto);
+            //        }
+            //        userdto.Wallet.Orders.Add(orderdto);
+                    
+            //    }
+
+            //    resultUsers.Add(userdto);
+            //}
+
+            return Ok(resultUsers);
+           
         }
 
         //تایید رزرو کار 
@@ -153,11 +204,16 @@ namespace Taktamir.Endpoint.Controllers.Admin
         {
             var findjob=await _jobRepository.GetByIdAsync(cancellationToken,idjob);
             if (findjob == null) return NotFound("Job dos not Exist");
-            findjob.StatusJob = (int)StatusJob.Doing;
-            findjob.ReservationStatus = ReservationStatus.ConfirmeByidmin;
-            findjob.Reservation = true;
-            await _jobRepository.UpdateAsync(findjob,cancellationToken);
-            return Ok("Confirmed");
+            if (findjob.ReservationStatus.Equals(ReservationStatus.ReservedByTec))
+            {
+                findjob.StatusJob = (int)StatusJob.Doing;
+                findjob.ReservationStatus = ReservationStatus.ConfirmeByidmin;
+                findjob.Reservation = true;
+                await _jobRepository.UpdateAsync(findjob, cancellationToken);
+                return Ok("Confirmed");
+            }
+            Response.StatusCode = (int)HttpStatusCode.NotAcceptable;
+            return new JsonResult("can not comfirme job becuse already confirmed or not Reserve yet");
         }
 
     }

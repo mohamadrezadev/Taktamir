@@ -21,6 +21,8 @@ namespace Taktamir.Core.Domain._01.Jobs
         {
             this.Supplies = new HashSet<Supplies>();
             this.Reservation = false;
+            ReservationStatus = ReservationStatus.WatingforReserve;
+            OrderJobs = new HashSet<OrderJob>();
             
         }
         [Key]
@@ -38,22 +40,18 @@ namespace Taktamir.Core.Domain._01.Jobs
         [AllowNull]
         public virtual ICollection<Supplies> Supplies { get; set; }
 
-        public int? orderid { get; set; }
-        [AllowNull]
-        public Order Order { get; set; }
-
-        //public int UserId { get; set; }
-        //[AllowNull]
-        //public User User { get; set; }
+        public virtual ICollection<OrderJob> OrderJobs { get; set; }
 
         public int CustomerId { get; set; }
         public virtual Customer Customer { get; set; }
 
     }
     public enum ReservationStatus
-    {
+    { 
+        WatingforReserve=0,
         ReservedByTec=1,
-        ConfirmeByidmin=2,
+        Pending=2,       
+        ConfirmeByidmin=3,
     }
 
 }

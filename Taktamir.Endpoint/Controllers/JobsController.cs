@@ -37,7 +37,8 @@ namespace Taktamir.Endpoint.Controllers
             { 
                 jobs.ForEach(j =>
                 {
-                   item.Customer= _mapper.Map<ReadCustomerDto>(j.Customer);
+                    item.Customer= _mapper.Map<ReadCustomerDto>(j.Customer);
+                    item.ReservationStatusResult = ReadJobDto.SetReservationStatus((int) j.ReservationStatus);
                 });
             });
             return Ok(result);
@@ -53,6 +54,7 @@ namespace Taktamir.Endpoint.Controllers
             var findjob=await _jobRepository.GetJobBtid(id);
 
             var resutl=_mapper.Map<ReadJobDto>(findjob);
+            resutl.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)findjob.ReservationStatus);
             resutl.Customer=_mapper.Map<ReadCustomerDto>(resutl.Customer);
             return Ok(resutl);
         }
@@ -64,6 +66,7 @@ namespace Taktamir.Endpoint.Controllers
             if (!ModelState.IsValid) return  BadRequest(model);
             var newjob = _mapper.Map<Job>(model); 
             newjob.Customer = _mapper.Map<Customer>(model.CustomerDto);
+
             await _jobRepository.AddAsync(newjob, cancellationToken);          
             return Created($"/api/Jobs/get/{newjob.Id}", newjob.Id);
         }

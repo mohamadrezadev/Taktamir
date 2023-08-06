@@ -37,6 +37,7 @@ namespace Taktamir.Endpoint.Controllers.Admin
                 {
                     itemdto.Customer=_mapper.Map<ReadCustomerDto>(item.Customer);
                     itemdto.StatusJob=  ReadJobDto.SetStatusJob(item.StatusJob);
+                    itemdto.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)item.ReservationStatus);
                 });
                 
             });
@@ -48,6 +49,7 @@ namespace Taktamir.Endpoint.Controllers.Admin
             var job =await _JobService.GetByIdAsync(cancellationToken,id); 
             var result = _mapper.Map<ReadJobDto>(job);
             result.StatusJob=ReadJobDto.SetStatusJob(job.StatusJob);
+            result.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)job.ReservationStatus);
             result.Customer = _mapper.Map<ReadCustomerDto>(job.Customer);
             return Ok(result);
         }

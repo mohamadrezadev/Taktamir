@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
+using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Endpoint.Models.Dtos.CustomerDtos;
 using Taktamir.Endpoint.Models.Dtos.UserDtos;
 
@@ -16,7 +17,7 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
         public string Description { get; set; }
         public bool UsedTokcet { get; set; } = false;
         public bool Reservation { get; set; } = false;
-
+        public string ReservationStatusResult { get; set; }
         public ReadCustomerDto Customer { get; set; }
      
 
@@ -43,7 +44,23 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
                     throw new ArgumentException("Invalid status job value.");
             }
         }
-
-
+        public static string SetReservationStatus(int status)
+        {
+            switch (status)
+            {
+                case 0:
+                    return ReservationStatus.WatingforReserve.ToString();
+                case 1:
+                return ReservationStatus.ReservedByTec.ToString();
+            case 2:
+                return ReservationStatus.Pending.ToString();
+            case 3:
+                     return ReservationStatus.ConfirmeByidmin.ToString();
+            default:
+                    throw new ArgumentException("Invalid status job value.");
+            }
+        }
+            
+   
     }
 }

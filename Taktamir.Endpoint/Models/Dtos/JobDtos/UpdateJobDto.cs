@@ -15,5 +15,11 @@ namespace Taktamir.Endpoint.Models.Dtos.JobDtos
         public ICollection <SuppliessDto> suppliessDtos { get; set; }
 
     }
+    public class ChangestatusJob
+    {
+        public string Description { get; set; }
+        public StatusJobDto StatusJobDto { get; set; }
+
+    }
    
 }

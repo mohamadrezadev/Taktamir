@@ -187,7 +187,7 @@ namespace Taktamir.Endpoint
             builder.Services.AddScoped<IVerifycodeRepository, VerifycodeRepository>();
             builder.Services.AddScoped<IRoomRepository, RoomRepository>();
         
-            builder.Services.AddSingleton<IDictionary<string, UserConnection>>(new Dictionary<string, UserConnection>());
+            builder.Services.AddSingleton<IDictionary<string, Room>>(new Dictionary<string, Room>());
 
             builder.Services.AddScoped<ISmsService, SmsService>();
             builder.Services.AddScoped<IJwtService, JwtService>();

@@ -40,6 +40,7 @@ namespace Taktamir.infra.Data.sql._01.Common
         public virtual DbSet<Job> Jobs { get; set; }
         public virtual DbSet<Customer> Customers { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
+        public virtual DbSet<OrderJob> OrderJobs { get; set; }
         public virtual DbSet<Wallet> Wallets { get; set; }
         public virtual DbSet<Supplies> Supplies { get; set; }
         public virtual DbSet<Verifycode> Verifycodes { get; set; }
@@ -59,8 +60,7 @@ namespace Taktamir.infra.Data.sql._01.Common
              .HasForeignKey<Wallet>(w => w.UserId)
              .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<Order>().HasMany(o => o.Jobs).WithOne(j => j.Order).HasForeignKey(j => j.orderid);
-     
+            
 
             builder.Entity<Wallet>()
                .HasMany(w => w.Orders)

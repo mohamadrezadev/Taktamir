@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
+using System.Net;
 using System.Security.Claims;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
@@ -110,18 +112,25 @@ namespace Taktamir.Endpoint.Controllers
         {
             var findjob =await _jobRepository.GetByIdAsync(cancellationToken, IdJob);
             if (findjob == null || IdJob <= 0) return BadRequest("Inalid Id job");
-            var findUser = await _userRepository.Entities.Include(p => p.Wallet)
+            if (findjob.ReservationStatus.Equals(ReservationStatus.WatingforReserve))
+            {
+                var findUser = await _userRepository.Entities.Include(p => p.Wallet)
               .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
-            var walletuser = await _walletRepository.Entities.Include(p => p.Orders).FirstOrDefaultAsync(p => p.Id == findUser.Wallet.Id);
-            var neworder = new Order();
-            neworder.Jobs.Add(findjob);
-            findjob.ReservationStatus = ReservationStatus.ReservedByTec;
-            findjob.StatusJob =(int) StatusJob.waiting;
-            walletuser.Orders.Add(neworder);
-            await _jobRepository.UpdateAsync(findjob, cancellationToken);
-            await _walletRepository.UpdateAsync(walletuser, cancellationToken);
+                var walletuser = await _walletRepository.Entities.Include(p => p.Orders).FirstOrDefaultAsync(p => p.Id == findUser.Wallet.Id);
+                var neworder = new Order();
+                var neworderjob = new OrderJob() { Order=neworder,Job=findjob};
+                neworder.OrderJobs.Add(neworderjob);
+                
+                findjob.StatusJob = (int)StatusJob.waiting;
+                findjob.ReservationStatus = ReservationStatus.ReservedByTec;
+                walletuser.Orders.Add(neworder);
+                await _jobRepository.UpdateAsync(findjob, cancellationToken);
+                await _walletRepository.UpdateAsync(walletuser, cancellationToken);
 
-            return Ok();
+                return Ok();
+            }
+            Response.StatusCode =(int) HttpStatusCode.NotAcceptable;
+            return new JsonResult("This job Already wating for reservetion by another Tecnecian ");
         }
         
         [Authorize]
@@ -130,28 +139,38 @@ namespace Taktamir.Endpoint.Controllers
         {
             var findUser = await _userRepository.Entities.Include(p => p.Wallet)
                 .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
-            var walletuser = await _walletRepository.Entities.Include(p => p.Orders).FirstOrDefaultAsync(p => p.Id == findUser.Wallet.Id);
-            var orders = new List<Order>();
-            foreach (var orderitem in walletuser.Orders)
+            var walletuser = await _walletRepository.Entities.Include(p => p.Orders).ThenInclude(p=>p.OrderJobs).ThenInclude(p=>p.Job).FirstOrDefaultAsync(p => p.Id == findUser.Wallet.Id);
+            var result = new List<ReadOrderDto>();
+            var listorderjobs = new List<ReadJobDto>();
+            foreach (var order in walletuser.Orders)
             {
-                var order =await _orderRepository.Entities.Include(p => p.Jobs).ThenInclude(p=>p.Customer).FirstOrDefaultAsync(p => p.Id == orderitem.Id);
-                orders.Add(order);
+                    foreach (var orderjob in order.OrderJobs)
+                    {
+                        var jobdto = _mapper.Map<ReadJobDto>(orderjob.Job);
+                        jobdto.ReservationStatusResult = ReadJobDto.SetReservationStatus((int)orderjob.Job.ReservationStatus);
+                        jobdto.StatusJob = ReadJobDto.SetStatusJob(orderjob.Job.StatusJob);
+                        var orderdto = new ReadOrderDto() { spent = order.spent, Total = order.Total, Id = order.Id };
+                        orderdto.JobsOrder.Add(jobdto);
+                        result.Add(orderdto);
+                    }
+               
+                //result.Add(_mapper.Map<ReadOrderDto>(order));
             }
-            var result = _mapper.Map<List<ReadOrderDto>>(orders);
-          
+            
             return Ok(result);
         }
 
         [Authorize]
         //[HttpPut("Change_of_work_status")]
         [HttpPost("Change_of_work_status")]
-        public async Task<IActionResult> Change_of_work_status(int orderid,int jobid, UpdateJobDto model, CancellationToken cancellationToken)
+        public async Task<IActionResult> Change_of_work_status(int orderid, ChangestatusJob model, CancellationToken cancellationToken)
         {
             if (!ModelState.IsValid) return BadRequest(model);
-            var order=await _orderRepository.Entities.Include(p=>p.Jobs).FirstOrDefaultAsync(p=>p.Id==orderid);
-            var findjob = await _jobRepository.GetByIdAsync(cancellationToken, jobid);
-            if (!order.Jobs.Any(p => p.Id == findjob.Id)) return NotFound("job dos not exist order ");   
-            findjob.StatusJob =(int) model.StatusJob;
+            var order=await _orderRepository.Entities.Include(p=>p.OrderJobs).ThenInclude(p=>p.Job).FirstOrDefaultAsync(p=>p.Id==orderid);
+            var idjob=order.OrderJobs.Select(p=>p.Job.Id).FirstOrDefault();
+            var findjob = await _jobRepository.GetByIdAsync(cancellationToken, idjob);
+            if (!order.OrderJobs.Any(p => p.Job.Id == findjob.Id)) return NotFound("job dos not exist order ");   
+            findjob.StatusJob =(int) model.StatusJobDto;
             findjob.Description=model.Description;
             await _jobRepository.UpdateAsync(findjob, cancellationToken);
             return Ok();
@@ -163,9 +182,9 @@ namespace Taktamir.Endpoint.Controllers
         {
             var findUser = await _userRepository.Entities.Include(p => p.Wallet)
                 .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
-            var order=await _orderRepository.Entities.Include(p=>p.Jobs).FirstOrDefaultAsync(p=>p.Id == orderid);
+            var order=await _orderRepository.Entities.Include(p=>p.OrderJobs).FirstOrDefaultAsync(p=>p.Id == orderid);
             var findjob = await _jobRepository.GetByIdAsync(cancellationToken, jobid);
-            if (!order.Jobs.Any(p => p.Id == findjob.Id)) return NotFound("job dos not exist order ");
+            if (!order.OrderJobs.Any(p => p.Id == findjob.Id)) return NotFound("job dos not exist order ");
             findjob.Description = model.Description;
             findjob.StatusJob=(int) model.StatusJob;
             foreach (var item in model.suppliessDtos)

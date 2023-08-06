@@ -23,11 +23,11 @@ namespace Taktamir.Endpoint.Controllers
         private readonly RoleManager<Role> _roleManager;
         private readonly UserManager<User> _userManager;
         private readonly IHubContext<ChatHub> _hubContext;
-        private readonly IDictionary<string, UserConnection> _connections;
+        private readonly IDictionary<string, Room> _connections;
         private readonly IRoomRepository _roomRepository;
 
         public ChatsController(IHubContext<ChatHub> hubContext, IUserRepository userRepository,
-            IDictionary<string, UserConnection> connections,IRoomRepository roomRepository,
+            IDictionary<string, Room> connections,IRoomRepository roomRepository,
             UserManager<User>userManager,RoleManager<Role> roleManager)
         {
             _userRepository = userRepository;
@@ -50,9 +50,8 @@ namespace Taktamir.Endpoint.Controllers
         private Task SendUsersConnected(string room)
         {
             var users = _connections.Values
-                .Where(c => c.Nameroom == room)
-                .Select(c => c.User);
-
+                .Where(c => c.NameRoom == room)
+                .Select(c => c.UsersId);
             return _hubContext.Clients.Group(room).SendAsync("UsersInRoom", users);
         }
 

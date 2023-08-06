@@ -8,13 +8,15 @@ namespace Taktamir.Endpoint.Models.Dtos.WalletDtos
 {
     public class ReadOrderDto
     {
-        
+        public ReadOrderDto()
+        {
+            this.JobsOrder = new HashSet<ReadJobDto>();
+        }
+
         public int Id { get; set; }
         public double Total { get; set; }
         public double spent { get; set; }
-
-
-       // public ReadWalletDto Wallet { get; set; }
-        public ICollection<ReadJobDto> Jobs { get; set; }
+        public ICollection<ReadJobDto> JobsOrder { get; set; }
     }
+    
 }

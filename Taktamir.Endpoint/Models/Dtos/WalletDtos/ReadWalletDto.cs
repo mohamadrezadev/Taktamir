@@ -6,8 +6,12 @@ namespace Taktamir.Endpoint.Models.Dtos.WalletDtos
 {
     public class ReadWalletDto
     {
+        public ReadWalletDto()
+        {
+            Orders = new List<ReadOrderDto> ();
+        }
         public int Id { get; set; }
-        public double Balance { get; private set; } = 0;
-        public List<ReadOrderDto> Orders { get; set; }
+        public double Balance { get;  set; } 
+        public ICollection<ReadOrderDto> Orders { get; set; }
     }
 }
