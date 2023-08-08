@@ -217,7 +217,7 @@ namespace Taktamir.Endpoint
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
-                    .WithOrigins("http://localhost:5173", "http://localhost:3006", " http://localhost:5173/");
+                    .WithOrigins("http://localhost:5173", "http://localhost:3006/", " http://localhost:5173/");
             }));
             builder.Services.AddSignalR();
 
