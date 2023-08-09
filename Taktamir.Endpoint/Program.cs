@@ -102,7 +102,7 @@ namespace Taktamir.Endpoint
                         var accessToken = context.Request.Query["access_token"];
                         var path = context.HttpContext.Request.Path;
                         if (!string.IsNullOrEmpty(accessToken)
-                            && path.StartsWithSegments("/kitchen"))
+                            && path.StartsWithSegments("/"))
                         {
                             context.Token = accessToken;
                         }
@@ -193,31 +193,22 @@ namespace Taktamir.Endpoint
             builder.Services.AddScoped<IJwtService, JwtService>();
             builder.Services.AddTransient<ITokenService, TokenService>();
 
-            //builder.Services.AddCors(options =>
-            // {
-            //     options.AddPolicy("CorsPolicy", builder =>
-            //     {
-            //         builder
-            //             .AllowAnyMethod()
-            //             .AllowAnyHeader()
-            //             .WithOrigins("http://localhost:5173", "http://localhost:3006")
-            //             .AllowCredentials();
-            //     });
-            //     //options.AddPolicy("CorsPolicy", builder =>
-            //     //{
-            //     //    builder.AllowAnyMethod()
-            //     //           .AllowAnyHeader()
-            //     //           .WithOrigins("http://localhost:3006")
-            //     //           .AllowCredentials();
-            //     //});
-            // });
+         
+            //builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
+            //{
+            //    builder
+            //        .AllowAnyMethod()
+            //        .AllowAnyHeader()
+            //        .AllowCredentials()
+            //        .WithOrigins("http://localhost:5173", "http://localhost:3006", " http://localhost:5173/");
+            //}));
             builder.Services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
             {
                 builder
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
-                    .WithOrigins("http://localhost:5173", "http://localhost:3006/", " http://localhost:5173/");
+                    .SetIsOriginAllowed(_ => true); // Allow any origin
             }));
             builder.Services.AddSignalR();
 
