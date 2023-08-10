@@ -68,15 +68,41 @@ namespace Taktamir.infra.Data.sql._06.Wallets
             return wallet.Orders.ToList();
         }
 
+        public async Task<Tuple<List<User>, PaginationMetadata>> GetAllWorksbyAdmin(int page = 1, int pageSize = 10)
+        {
+            var query = DbContext.Users
+                    .Include(p => p.Specialties)
+                    .Include(w => w.Wallet)
+                    .Include(o => o.Wallet.Orders)
+                    .ThenInclude(p=>p.OrderJobs)
+                            .ThenInclude(j => j.Job)
+                                        .ThenInclude(c => c.Customer);
+
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users, paginationMetadata);
+        }
+
         public async Task<Tuple<List<User>, PaginationMetadata>> GetAll_Work_pending_Orders(int page = 1, int pageSize = 10)
         {
+            var query = DbContext.Users
+                    .Include(p => p.Specialties)
+                    .Include(w => w.Wallet)
+                    .Where(p => p.Wallet.Orders.Any(o => o.OrderJobs.Any(j => j.Job.ReservationStatus == ReservationStatus.ReservedByTec)))
+                    .Include(o => o.Wallet.Orders)
+                        .ThenInclude(j => j.OrderJobs.Where(j => j.Job.ReservationStatus == ReservationStatus.ReservedByTec))
+                            .ThenInclude(j => j.Job)
+                                        .ThenInclude(c => c.Customer);
 
-            var query = DbContext.Users.Include(w => w.Wallet)
-                .ThenInclude(o => o.Orders)
-                .ThenInclude(p => p.OrderJobs
-                .Where(p => p.Job.ReservationStatus.Equals(ReservationStatus.ReservedByTec)|| p.Job.ReservationStatus.Equals(ReservationStatus.ConfirmeByAdmin)))
-                .ThenInclude(p => p.Job).ThenInclude(p => p.Customer);
-
+         
             var totalCount = await query.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 

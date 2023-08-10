@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Net;
@@ -117,6 +118,11 @@ namespace Taktamir.Endpoint.Controllers
             await _userRepository.UpdateAsync(findUser, cancellationToken);
             var result = _mapper.Map<ReadUserDto>(findUser);
             result.specialties = model.specialties;
+            if (!findUser.IsConfirmedAccount)
+            {
+                Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                return new JsonResult(result);
+            }
             return Ok(result);
 
         }
@@ -127,24 +133,30 @@ namespace Taktamir.Endpoint.Controllers
         {
             var findjob =await _jobRepository.GetByIdAsync(cancellationToken, IdJob);
             if (findjob == null || IdJob <= 0) return BadRequest("Inalid Id job");
-            if (findjob.ReservationStatus.Equals(ReservationStatus.WatingforReserve))
+            var findUser = await _userRepository.Entities.Include(p => p.Wallet)
+                    .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
+            if (findUser.IsConfirmedAccount)
             {
-                var findUser = await _userRepository.Entities.Include(p => p.Wallet)
-              .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
-                var walletuser = await _walletRepository.Entities.Include(p => p.Orders).FirstOrDefaultAsync(p => p.Id == findUser.Wallet.Id);
-                var neworder = new Order();
-                var neworderjob = new OrderJob() { Order=neworder,Job=findjob};
-                neworder.OrderJobs.Add(neworderjob);
-                
-                findjob.StatusJob = StatusJob.waiting;
-                findjob.ReservationStatus = ReservationStatus.ReservedByTec;
-                walletuser.Orders.Add(neworder);
-                await _jobRepository.UpdateAsync(findjob, cancellationToken);
-                await _walletRepository.UpdateAsync(walletuser, cancellationToken);
-                return Ok("Reserved job successfuly");
+                if (findjob.ReservationStatus.Equals(ReservationStatus.WatingforReserve))
+                {
+
+                    var walletuser = await _walletRepository.Entities.Include(p => p.Orders).FirstOrDefaultAsync(p => p.Id == findUser.Wallet.Id);
+                    var neworder = new Order();
+                    var neworderjob = new OrderJob() { Order = neworder, Job = findjob };
+                    neworder.OrderJobs.Add(neworderjob);
+
+                    findjob.StatusJob = StatusJob.waiting;
+                    findjob.ReservationStatus = ReservationStatus.ReservedByTec;
+                    walletuser.Orders.Add(neworder);
+                    await _jobRepository.UpdateAsync(findjob, cancellationToken);
+                    await _walletRepository.UpdateAsync(walletuser, cancellationToken);
+                    return Ok("Reserved job successfuly");
+                }
+                Response.StatusCode = (int)HttpStatusCode.NotAcceptable;
+                return new JsonResult("This job Already wating for reservetion by another Tecnecian ");
             }
-            Response.StatusCode =(int) HttpStatusCode.NotAcceptable;
-            return new JsonResult("This job Already wating for reservetion by another Tecnecian ");
+            Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            return BadRequest("can not book a job ");
         }
         
 

@@ -8,9 +8,9 @@ namespace Taktamir.framework.Common
         {
             switch (statusjob)
             {
-                
+                case 0:
+                    return StatusJob.NotReserved.ToString();
                 case 1:
-                    
                     return StatusJob.Completed.ToString();
                 case 2:
                     return StatusJob.Cancel.ToString();

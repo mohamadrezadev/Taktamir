@@ -83,7 +83,7 @@ namespace Taktamir.infra.Data.sql._03.Users
             var totalCount = await DbContext.Users.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
 
-            var users = await DbContext.Users
+            var users = await DbContext.Users.Include(p=>p.Specialties)
                 .Include(p => p.Wallet)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -98,7 +98,7 @@ namespace Taktamir.infra.Data.sql._03.Users
         {
             var totalCount = await DbContext.Users.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-            var users = await DbContext.Users
+            var users = await DbContext.Users.Include(p=>p.Specialties)
                 .Where(p => !p.IsConfirmedAccount)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -111,7 +111,7 @@ namespace Taktamir.infra.Data.sql._03.Users
         {
             var totalCount = await DbContext.Users.CountAsync();
             var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
-            var users = await DbContext.Users
+            var users = await DbContext.Users.Include(p => p.Specialties)
                 .Where(p => p.IsConfirmedAccount)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)

@@ -8,6 +8,7 @@ namespace Taktamir.framework.Common.JobsUtill
 {
     public enum StatusJob
     {
+        NotReserved = 0,
         /// <summary>
         /// کامل شده
         /// </summary>

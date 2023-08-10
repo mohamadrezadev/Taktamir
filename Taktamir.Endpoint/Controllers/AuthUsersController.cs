@@ -181,6 +181,11 @@ namespace Taktamir.Endpoint.Controllers
                 Response.StatusCode = (int)HttpStatusCode.UpgradeRequired;
                 return new JsonResult(token);
             }
+            if (!finduser.IsConfirmedAccount) 
+            {
+                Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                return new JsonResult(token);
+            }
             Response.StatusCode = (int)HttpStatusCode.OK;
             
             return Ok(token);

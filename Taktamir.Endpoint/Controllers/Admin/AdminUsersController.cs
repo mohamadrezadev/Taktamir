@@ -15,6 +15,7 @@ using System.Text;
 using Taktamir.Core.Domain._01.Jobs;
 using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
+using Taktamir.Endpoint.Models.Dtos.AdminDto;
 using Taktamir.Endpoint.Models.Dtos.JobDtos;
 using Taktamir.Endpoint.Models.Dtos.UserDtos;
 using Taktamir.Endpoint.Models.Dtos.WalletDtos;
@@ -78,34 +79,50 @@ namespace Taktamir.Endpoint.Controllers.Admin
                     return Problem(st.ToString());
                 }
             }
-            var result = await _userManager.AddToRoleAsync(user, UserRoleApp.Admin);
-            if (!result.Succeeded)
+            var isAdmin = await _userManager.IsInRoleAsync(user,UserRoleApp.Admin);
+            if (!isAdmin )
             {
-                foreach (var item in result.Errors)
+                var result = await _userManager.AddToRoleAsync(user, UserRoleApp.Admin);
+                if (!result.Succeeded)
                 {
-                    st.Append(item);
+                    foreach (var item in result.Errors)
+                    {
+                        st.Append(item);
+                    }
+                    return Problem(st.ToString());
                 }
-                return Problem(st.ToString());
+                return Ok("Add Role to this Account");
             }
 
-            return Ok("Add Role to this Account");
+            Response.StatusCode = (int)HttpStatusCode.NotAcceptable;
+            return Content("Add Role to this Account");
         }
         
+        //تایید حساب 
         //[HttpPut("VerifyUser")]
         [HttpPost("VerifyAccountUser")]
-        public IActionResult VerifyUser(int userid)
+        public async Task<IActionResult> VerifyUser(int userid,CancellationToken cancellationToken)
         {
-            if(  Request.HttpContext.User.Identity.IsAuthenticated && Request.HttpContext.User.IsInRole(UserRoleApp.Admin))
-            {
-                var user = _userRepository.GetById(userid);
-                if (user == null) return NotFound("User not found");
-                user.confirme(true);
-                _userRepository.Update(user);
-                return Ok("verify user Sucssesfuly");
-            }
-            return Forbid();
-            
+            var user =await _userRepository.GetByIdAsync(cancellationToken, userid);
+            if (user == null) return NotFound("User not found");
+            user.confirme(true);
+            await  _userRepository.UpdateAsync(user,cancellationToken);
+            return Ok("verify user Sucssesfuly");
+
         }
+
+        [HttpPost("RejectAccountUser")]
+        public async Task<IActionResult> RejectUser(int Userid,CancellationToken cancellationToken)
+        {
+            var FindUser=await _userRepository.Entities
+                .Include(p=>p.Specialties).Include(p=>p.Wallet).ThenInclude(p=>p.Orders)
+                .FirstOrDefaultAsync(p=>p.Id== Userid);
+            if (FindUser == null) return NotFound("User dos not Exist");
+            FindUser.confirme(false);
+            await _userRepository.DeleteAsync(FindUser,cancellationToken);
+            return Ok();
+        }
+
         //همه کاربران 
         [HttpGet("AllUsers")]
         public async  Task<IActionResult> GetAllusers(int page = 1, int pageSize = 10)
@@ -113,14 +130,16 @@ namespace Taktamir.Endpoint.Controllers.Admin
             
             var Result = await _userRepository.GetAllUsersAsync(page,pageSize);
             if (Result.Item1.Count() <= 0) return NotFound("not Yet Users Active Account");
-            var result = _mapper.Map<List<ReadUserDto>>(Result.Item1);
-            Result.Item1.ForEach(user =>
+            var result = new List<ReadUserDto>();
+            foreach (var user in Result.Item1)
             {
-                result.ForEach(item =>
-                {
-                    item.StatusAccount = AccountUtills.SetConfermetionAccount(user.IsConfirmedAccount);
-                });
-            });
+                var Specialties = _mapper.Map<List<SpecialtyDto>>(user.Specialties);
+                var userdto=_mapper.Map<ReadUserDto>(user);
+                userdto.StatusAccount = AccountUtills.SetConfermetionAccount(user.IsConfirmedAccount);
+                userdto.specialties = Specialties;
+                result.Add(userdto);
+
+            }
             Response.StatusCode = (int)HttpStatusCode.OK;
             return new JsonResult(new { PaginationData = Result.Item2 ,Users = result});
 
@@ -133,13 +152,15 @@ namespace Taktamir.Endpoint.Controllers.Admin
         public async Task<IActionResult> Unverified_users(int page = 1, int pageSize = 10)
         {
             //var users=await _userRepository.Entities.Where(p=>!p.IsConfirmedAccount).ToListAsync();
-            var Result=await _userRepository.GetAllUsersAsync(page,pageSize);
+            var Result=await _userRepository.Unverified_users(page,pageSize);
             var ResponseData=_mapper.Map<List<ReadUserDto>>(Result.Item1);
             Result.Item1.ForEach(user =>
             {
+                var Specialties = _mapper.Map<List<SpecialtyDto>>(user.Specialties);
                 ResponseData.ForEach(item =>
                 {
                     item.StatusAccount = AccountUtills.SetConfermetionAccount(user.IsConfirmedAccount);
+                    item.specialties = Specialties;
                 });
             });
             
@@ -156,9 +177,11 @@ namespace Taktamir.Endpoint.Controllers.Admin
             var ResponseData = _mapper.Map<List<ReadUserDto>>(Result.Item1);
             Result.Item1.ForEach(user =>
             {
+                var Specialties = _mapper.Map<List<SpecialtyDto>>(user.Specialties);
                 ResponseData.ForEach(item =>
                 {
                     item.StatusAccount = AccountUtills.SetConfermetionAccount(user.IsConfirmedAccount);
+                    item.specialties = Specialties;
                 });
             });
             Response.StatusCode = (int)HttpStatusCode.OK;
@@ -186,35 +209,53 @@ namespace Taktamir.Endpoint.Controllers.Admin
             var result=await _walletRepository.GetAll_Work_pending_Orders(page, pageSize);
 
 
-            var resultUsers=new List<ReadUserDto>();
+            var resultUsers=new List<ReadUsersAdmindto>();
             foreach (var user in result.Item1)
             {
-                var userdto = _mapper.Map<ReadUserDto>(user);
-                userdto.Wallet.Orders.Clear();
+                var Userdata = new ReadUsersAdmindto();
+                Userdata.id=user.Id;
+                Userdata.FullNameUser = $"{user.Firstname} {user.LastName}";
+                Userdata.IsActive = user.IsActive;
+                Userdata.PhoneNumber = user.PhoneNumber;
+                Userdata.SpecialtyDtos= _mapper.Map<List<SpecialtyDto>>(user.Specialties);
+              
                 foreach (var order in user.Wallet.Orders)
                 {
-                    var orderdto = new ReadOrderDto(); 
-
-                    orderdto.Total = order.Total;
-                    orderdto.Id = order.Id;
-
-                    foreach (var job in order.OrderJobs)
+                    if (order.OrderJobs.Count > 0)
                     {
-                        var jobdto = _mapper.Map<ReadJobDto>(job.Job);
-                        jobdto.StatusJob= JobsUtills.SetStatusJob((int)job.Job.StatusJob);
-                        jobdto.ReservationStatusResult = JobsUtills.SetReservationStatus((int)job.Job.ReservationStatus);
-                        orderdto.JobsOrder.Add(jobdto);
+                        var orderdto = new OrderUserAdmindto();
+                        orderdto.Id = order.Id;
+
+                        foreach (var job in order.OrderJobs)
+                        {
+                            var jobdto = new jobsAdminDto();
+                            jobdto.Id = job.Id;
+                            jobdto.Problems = job.Job.Problems;
+                            jobdto.Name_Device = job.Job.Name_Device;
+                            jobdto.ReservationStatusResult = JobsUtills.SetReservationStatus((int)job.Job.ReservationStatus);
+                            jobdto.StatusJob = JobsUtills.SetStatusJob((int)job.Job.StatusJob);
+                            jobdto.Customer = new ReadCustomerAdminDto()
+                            {
+                                Id = job.Job.Customer.Id,
+                                Address = job.Job.Customer.Address,
+                                Phone = job.Job.Customer.Phone,
+                                FullNameCustomer = job.Job.Customer.FullNameCustomer,
+                                PhoneNumber = job.Job.Customer.PhoneNumber,
+                            };
+                            orderdto.Jobs.Add(jobdto);
+                        }
+
+
+                        Userdata.orders.Add(orderdto);
                     }
-
-                    userdto.Wallet.Orders.Add(orderdto);
+                   
                 }
-
-                resultUsers.Add(userdto);
+                resultUsers.Add(Userdata);
             }
             
 
 
-            return new JsonResult (new { PaginationMetadata=result.Item2,Data= resultUsers });
+            return new JsonResult (new { PaginationData = result.Item2,Data= resultUsers });
            
         }
 
@@ -225,7 +266,11 @@ namespace Taktamir.Endpoint.Controllers.Admin
         {
             var order = await _orderRepository.Entities.Include(p => p.OrderJobs)
                 .ThenInclude(p => p.Job).ThenInclude(p => p.Customer).Where(p=>p.Id==Idorder).ToListAsync();
-           var idJob= order.SelectMany(p=>p.OrderJobs).Select(p => p.Job.Id).ToList();
+            if (order == null)
+            {
+                return BadRequest();
+            }
+            var idJob= order.SelectMany(p=>p.OrderJobs.Select(p => p.Job.Id)).ToList();
          
             var Findjob = await _jobRepository.GetByIdAsync(cancellationToken, idJob[0]);
             
@@ -241,22 +286,28 @@ namespace Taktamir.Endpoint.Controllers.Admin
             Response.StatusCode = (int)HttpStatusCode.NotAcceptable;
             return new JsonResult("can not comfirme job becuse already confirmed or not Reserve yet ");
         }
+        
         [HttpGet("Work_booking_Reject")]
         public async Task <IActionResult> work_booking_reject(int Idorder, CancellationToken cancellationToken)
         {
             var order = await _orderRepository.Entities.Include(p => p.OrderJobs)
-                .ThenInclude(p => p.Job).ThenInclude(p => p.Customer).Where(p => p.Id == Idorder).FirstOrDefaultAsync();
-            var idJob = order.OrderJobs.Select(p => p.Job.Id).FirstOrDefault();
-
-            var Findjob = await _jobRepository.GetByIdAsync(cancellationToken, idJob);
-
-            if (Findjob == null) return NotFound("Job dos not Exist");
-            if (Findjob.ReservationStatus.Equals(ReservationStatus.ReservedByTec))
+                .ThenInclude(p => p.Job).ThenInclude(p => p.Customer).FirstOrDefaultAsync(p => p.Id == Idorder);
+        
+            if (order==null)
             {
-                Findjob.StatusJob = StatusJob.Doing;
+                return BadRequest();
+            }
+            var idJob = order.OrderJobs.Select(p =>p.Job.Id).SingleOrDefault();
+        
+            var Findjob = await _jobRepository.Entities.Include(p => p.Customer).FirstOrDefaultAsync(p => p.Id == idJob);
+            if (Findjob == null) return NotFound("Job dos not Exist");
+            if (Findjob.ReservationStatus.Equals(ReservationStatus.ReservedByTec)|| Findjob.ReservationStatus.Equals(ReservationStatus.WatingforReserve))
+            {
+                Findjob.StatusJob = StatusJob.waiting;
                 Findjob.ReservationStatus = ReservationStatus.WatingforReserve;
                 Findjob.Reservation = true;
                 await _jobRepository.UpdateAsync(Findjob, cancellationToken);
+                order.OrderJobs.Clear();
                 await _orderRepository.DeleteAsync(order, cancellationToken);
                 return Ok("Reject booking job ");
             }

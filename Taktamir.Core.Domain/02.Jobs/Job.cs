@@ -23,6 +23,7 @@ namespace Taktamir.Core.Domain._01.Jobs
             this.Supplies = new HashSet<Supplies>();
             this.Reservation = false;
             ReservationStatus = ReservationStatus.WatingforReserve;
+            this.StatusJob = StatusJob.waiting;
             OrderJobs = new HashSet<OrderJob>();
             
         }
