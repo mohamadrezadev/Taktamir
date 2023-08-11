@@ -57,8 +57,9 @@ namespace Taktamir.Endpoint.Controllers.Admin
             _mapper = mapper;
         }
         #endregion
-        
+
         [HttpGet("UpgradeAccounttoAdmin")]
+        
         public async Task<IActionResult> UpgradeAccounttoAdmin(int userid,CancellationToken cancellationToken)
         {
             var st = new StringBuilder();

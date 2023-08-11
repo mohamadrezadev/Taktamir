@@ -61,7 +61,6 @@ namespace Taktamir.Endpoint.Controllers
             if (!phone_number.IsValidMobile(oprator: OpratorType.AllOpprator)) return BadRequest("Invalid phone numbe");
             if (!Request.QueryString.HasValue || phone_number.Length < 10) return BadRequest("phone number field is required!");
             var IsSendcode= await _smsService.SendVerifycode(phone_number);
-         //   if (!IsSendcode.Item1) return Problem("An error occurred. Please try again",null,StatusCodes.Status503ServiceUnavailable);
             return Ok($"Send Code to phone number :{phone_number}");
         }
         

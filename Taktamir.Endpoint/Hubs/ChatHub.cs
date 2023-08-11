@@ -61,17 +61,13 @@ namespace Taktamir.Endpoint.Hubs
                 RoomId=room.RoomId,
                 
             };
-            if (isroleadmin) newmessage.Sender = "Admin";
-            else
-            {
-                newmessage.Sender =$"{user.Firstname} {user.LastName}";
-            }
-
+            newmessage.Sender = isroleadmin ? "Admin" : $"{user.Firstname} {user.LastName}";
+           
 
             room.Messages.Add(newmessage);
             await _roomRepository.UpdateAsync(room, CancellationToken.None);
             var userIds = room.UsersId.ToList();
-            //msgdto
+
             var serializerSettings = new JsonSerializerSettings
             {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore
@@ -79,14 +75,10 @@ namespace Taktamir.Endpoint.Hubs
             newmessage.Room = null;
            
             var messageJson = JsonConvert.SerializeObject(newmessage, serializerSettings);
-            var msgnotif = JsonConvert.SerializeObject(new { user.Firstname, user.LastName,newmessage.Sender },serializerSettings);
-            await Clients.Group(room.NameRoom).SendAsync("notification",msgnotif);
-           // await Clients.Group(room.NameRoom).SendAsync("AllMessage", room.Messages.SelectMany(p => p.Text).ToList());
+      
+            await Clients.Group(room.NameRoom).SendAsync("notification", new { user.Firstname, user.LastName, newmessage.Sender });
+
             await Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", $"{user.Firstname}{user.LastName}", messageJson);
-
-          
-          
-
 
         }
         public async Task SendPrivateMessage(string userId, string message)
@@ -140,7 +132,7 @@ namespace Taktamir.Endpoint.Hubs
                 };
                 var messageJson = JsonConvert.SerializeObject(messageList, serializerSettings);
                 await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", messageJson);
-                //await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p => p.Text).ToList());
+  
                 await SendUsersConnected(findroom.NameRoom);
                 
                 
@@ -171,16 +163,13 @@ namespace Taktamir.Endpoint.Hubs
                     await Clients.Caller.SendAsync("Erorr", "not found room");
                 
                 await Groups.AddToGroupAsync(Context.ConnectionId, findroom.NameRoom);
-               // await Clients.Group(findroom.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{findadmin.Firstname + findadmin.LastName} has joined room");
                 var messageList = findroom.Messages.ToList();
-               // _connections[Context.ConnectionId] = findroom;
                 var serializerSettings = new JsonSerializerSettings
                 {
                     ReferenceLoopHandling = ReferenceLoopHandling.Ignore
                 };
                 var messageJson = JsonConvert.SerializeObject(messageList, serializerSettings);
                 await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", messageJson);
-                //await Clients.Group(findroom.NameRoom).SendAsync("AllMessage", findroom.Messages.SelectMany(p => p.Text).ToList());
                 await SendUsersConnected(findroom.NameRoom);
 
             }
@@ -191,17 +180,19 @@ namespace Taktamir.Endpoint.Hubs
            
 
         }
+     
         public override Task OnDisconnectedAsync(Exception exception)
         {
             if (_connections.TryGetValue(Context.ConnectionId, out Room room))
             {
                 _connections.Remove(Context.ConnectionId);
-                Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{room.User.Firstname+room.User.LastName} has left");
+                Clients.Group(room.NameRoom).SendAsync("ReceiveMessage", _botUser, $"{room.User.Firstname + room.User.LastName} has left");
                 SendUsersConnected(room.NameRoom);
             }
 
             return base.OnDisconnectedAsync(exception);
         }
+
         public Task SendUsersConnected(string room)
         {
             var usersid = _roomRepository.Entities.Where(r => r.NameRoom == room).Select(p => p.UsersId).ToList();

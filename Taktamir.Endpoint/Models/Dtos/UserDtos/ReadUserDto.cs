@@ -21,6 +21,7 @@ namespace Taktamir.Endpoint.Models.Dtos.UserDtos
         public string StatusAccount { get; set; }
         public virtual ReadWalletDto Wallet { get; set; }
         public ICollection<SpecialtyDto> specialties { get; set; }
+        public string Role { get; set; }
 
 
     }

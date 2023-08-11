@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
@@ -36,10 +37,13 @@ namespace Taktamir.Endpoint.Controllers
         private readonly IOrderRepository _orderRepository;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IRoomRepository _roomRepository;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<Role> _roleManager;
 
         public UsersController(IUserRepository userRepository,IMapper mapper,
             IJobRepository jobRepository,IWalletRepository walletRepository, IHttpContextAccessor httpContextAccessor,
-            ISuppliesRepository suppliesRepository,IOrderRepository orderRepository,IRoomRepository roomRepository)
+            ISuppliesRepository suppliesRepository,IOrderRepository orderRepository,IRoomRepository roomRepository,
+            UserManager<User> userManager,RoleManager<Role> roleManager)
         {
             _userRepository = userRepository;
             _mapper = mapper;
@@ -49,6 +53,8 @@ namespace Taktamir.Endpoint.Controllers
             _orderRepository = orderRepository;
             _httpContextAccessor = httpContextAccessor;
             _roomRepository = roomRepository;
+            _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         #endregion
@@ -65,17 +71,21 @@ namespace Taktamir.Endpoint.Controllers
         /// <returns>The user with the specified ID.</returns>
         /// <response code="200">Returns the user.</response>
         /// <response code="404">If the user is not found.</response>
-        [HttpGet("user")]
+        [HttpGet("Profile")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> me()
         {
             var findUser = await _userRepository.Entities.Include(p => p.Wallet).Include(p => p.Specialties)
                 .FirstOrDefaultAsync(p => p.PhoneNumber.Equals(_httpContextAccessor.HttpContext.User.FindFirstValue("MobilePhone")));
+            
             if (findUser == null) return NotFound("User dos not exist");
             var result = _mapper.Map<ReadUserDto>(findUser);
             result.specialties = _mapper.Map<List<SpecialtyDto>>(findUser.Specialties);
             result.Wallet = _mapper.Map<ReadWalletDto>(findUser.Wallet);
+            var isadmin = await _userManager.IsInRoleAsync(findUser,UserRoleApp.Admin);
+            result.Role = isadmin ? UserRoleApp.Admin : UserRoleApp.Technician;
+
             return Ok(result);
         }
 
@@ -112,8 +122,12 @@ namespace Taktamir.Endpoint.Controllers
             if (findroom!=null)
             {
                 findroom.NameRoom = $"{findUser.Firstname} {findUser.LastName}";
-               // await _roomRepository.UpdateAsync(findroom,cancellationToken);
                 findUser.Room = findroom;
+                var isexistname=await _roomRepository.Entities.FirstOrDefaultAsync(p=>p.NameRoom.Equals(findroom.NameRoom));
+                if (isexistname!=null)
+                {
+                    findroom.NameRoom = $"{findUser.Firstname} {findUser.LastName}({findUser.PhoneNumber})";
+                }
             }
             await _userRepository.UpdateAsync(findUser, cancellationToken);
             var result = _mapper.Map<ReadUserDto>(findUser);
