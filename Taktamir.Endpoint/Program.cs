@@ -50,18 +50,18 @@ namespace Taktamir.Endpoint
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddDbContext<AppDbContext>(options =>
-            {
-                options.UseSqlite(builder.Configuration.GetConnectionString("sqliteconn"), b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
-                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-                options.EnableSensitiveDataLogging();
-            });
-            //builder.Services.AddDbContext<AppDbContext>(o =>
+            //builder.Services.AddDbContext<AppDbContext>(options =>
             //{
-            //    o.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
-            //    o.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-            //    o.EnableSensitiveDataLogging();
+            //    options.UseSqlite(builder.Configuration.GetConnectionString("sqliteconn"), b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
+            //    options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+            //    options.EnableSensitiveDataLogging();
             //});
+            builder.Services.AddDbContext<AppDbContext>(o =>
+            {
+                o.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), b => b.MigrationsAssembly("Taktamir.infra.Data.sql"));
+                o.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+                o.EnableSensitiveDataLogging();
+            });
             builder.Services.AddIdentity<User, Role>(option => 
             {
                 option.SignIn.RequireConfirmedEmail = false;
