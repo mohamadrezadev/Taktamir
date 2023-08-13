@@ -46,9 +46,20 @@ namespace Taktamir.Endpoint
             }).UseNLog();
 
             // Add services to the container.
-           
+            builder.Services.AddCors();
+            //builder.Services
+            //.AddCors(options =>
+            //{
+                
+
+            //    options.AddPolicy("signalr",
+            //        builder => builder
+            //        .AllowAnyMethod()
+            //        .AllowAnyHeader()
+            //        .AllowCredentials()
+            //        .SetIsOriginAllowed(hostName => true));
+            //});
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             //builder.Services.AddDbContext<AppDbContext>(options =>
             //{
@@ -194,38 +205,12 @@ namespace Taktamir.Endpoint
             builder.Services.AddTransient<ITokenService, TokenService>();
 
 
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("LocalhostPolicy", builder =>
-                {
-                    builder
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials()
-                        .WithOrigins("http://localhost:3006", "https://localhost:3006"); // Allow specific origin
-                });
-
-                options.AddPolicy("DomainPolicy", builder =>
-                {
-                    builder
-                        .AllowAnyMethod()
-                        .AllowAnyHeader()
-                        .AllowCredentials()
-                        .WithOrigins("https://taktamirapp.mohamadrezakiani.ir/", "http://taktamirapp.mohamadrezakiani.ir/")
-                        .SetIsOriginAllowed(origin => origin.EndsWith(".mohamadrezakiani.ir")); 
-                });
-                options.AddPolicy("AllowAll", builder =>
-                {
-                    builder.SetIsOriginAllowed(_ => true).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
-                });
-            });
+           
             builder.Services.AddSignalR();
 
             var app = builder.Build();
             app.UseRouting();
-            app.UseCors("LocalhostPolicy");
-            app.UseCors("DomainPolicy");
-            app.UseCors("AllowAll");
+           
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
@@ -233,9 +218,17 @@ namespace Taktamir.Endpoint
                 c.RoutePrefix = string.Empty;  // Set Swagger UI at apps root
 
             });
+
+            
+            //app.UseCors("signalr");
+            app.UseCors(x => x
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .SetIsOriginAllowed(origin => true) // allow any origin
+                .AllowCredentials());
+
             app.UseAuthentication();
             app.UseAuthorization();
-           
             app.MapControllers();
             app.MapHub<ChatHub>("/chats"); 
             app.Run();
