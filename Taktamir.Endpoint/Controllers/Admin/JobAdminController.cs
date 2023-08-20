@@ -85,6 +85,9 @@ namespace Taktamir.Endpoint.Controllers.Admin
             }
              return new JsonResult(new { Paginationdata = result.Item2, Data = resultUsers });
         }
+
+       
+
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id,CancellationToken cancellationToken)
         {

@@ -131,13 +131,17 @@ namespace Taktamir.Endpoint.Controllers.Admin
             
             var Result = await _userRepository.GetAllUsersAsync(page,pageSize);
             if (Result.Item1.Count() <= 0) return NotFound("not Yet Users Active Account");
+            
             var result = new List<ReadUserDto>();
             foreach (var user in Result.Item1)
             {
                 var Specialties = _mapper.Map<List<SpecialtyDto>>(user.Specialties);
+
                 var userdto=_mapper.Map<ReadUserDto>(user);
                 userdto.StatusAccount = AccountUtills.SetConfermetionAccount(user.IsConfirmedAccount);
                 userdto.specialties = Specialties;
+                var rols =await _userManager.GetRolesAsync(user);
+                userdto.Role =string.Join(" , ", rols);
                 result.Add(userdto);
 
             }
@@ -272,12 +276,13 @@ namespace Taktamir.Endpoint.Controllers.Admin
                 return BadRequest();
             }
             var idJob= order.SelectMany(p=>p.OrderJobs.Select(p => p.Job.Id)).ToList();
-         
+          
             var Findjob = await _jobRepository.GetByIdAsync(cancellationToken, idJob[0]);
             
             if (Findjob == null) return NotFound("Job dos not Exist");
             if (Findjob.ReservationStatus.Equals(ReservationStatus.ReservedByTec))
             {
+                
                 Findjob.StatusJob = StatusJob.Doing;
                 Findjob.ReservationStatus = ReservationStatus.ConfirmeByAdmin;
                 Findjob.Reservation = true;

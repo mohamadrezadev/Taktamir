@@ -18,6 +18,7 @@ using Taktamir.Endpoint.Models.Dtos.UserDtos;
 using Taktamir.Endpoint.Models.Dtos.WalletDtos;
 using Taktamir.framework.Common;
 using Taktamir.framework.Common.JobsUtill;
+using Taktamir.framework.Common.OrderUtiil;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -158,7 +159,7 @@ namespace Taktamir.Endpoint.Controllers
                     var neworder = new Order();
                     var neworderjob = new OrderJob() { Order = neworder, Job = findjob };
                     neworder.OrderJobs.Add(neworderjob);
-
+                    neworder.PaymentStatus = PaymentStatus.unpaid;
                     findjob.StatusJob = StatusJob.waiting;
                     findjob.ReservationStatus = ReservationStatus.ReservedByTec;
                     walletuser.Orders.Add(neworder);
@@ -246,10 +247,12 @@ namespace Taktamir.Endpoint.Controllers
             foreach (var item in model.suppliessDtos)
             {
                 var s = new Supplies() {Price=item.Price,Name=item.Name};
-                order.Total += item.Price ;
+                order.spent += item.Price ;
                 findjob.Supplies.Add(s);
             }
-            order.spent = model.Spent;
+            order.Total += model.Spent;
+
+
             order.Description = model.DescriptionOrder;
             findjob.Description = model.DescriptionOrder;
             findjob.StatusJob = StatusJob.Completed;
@@ -263,8 +266,6 @@ namespace Taktamir.Endpoint.Controllers
             await _jobRepository.UpdateAsync(findjob,cancellationToken);
             await _orderRepository.UpdateAsync(order, cancellationToken);
 
-            findUserwallet.Wallet.Diposit(order.spent);
-            await _userRepository.UpdateAsync(findUserwallet, cancellationToken);
             
             return Ok();
         }

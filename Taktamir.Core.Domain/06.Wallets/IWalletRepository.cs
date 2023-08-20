@@ -18,6 +18,8 @@ namespace Taktamir.Core.Domain._06.Wallets
         Task<Order> GetOrderDetails(int orderid);
         Task<Tuple<List<User>, PaginationMetadata>> GetAll_Work_pending_Orders(int page = 1, int pageSize = 10);
         Task<Tuple<List<User>, PaginationMetadata>> GetAllWorksbyAdmin(int page = 1, int pageSize = 10);
+        Task<Tuple<List<User>, PaginationMetadata>> GetAllOrdersOutstandingbyAdmin(int page = 1, int pageSize = 10);
+        Task<Tuple<List<User>, PaginationMetadata>> GetAllOrdersClearedbyAdmin(int page = 1, int pageSize = 10);
 
 
     }
