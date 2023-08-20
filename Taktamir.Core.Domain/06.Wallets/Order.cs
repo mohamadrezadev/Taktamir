@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Taktamir.Core.Domain._01.Common;
 using Taktamir.Core.Domain._01.Jobs;
+using Taktamir.framework.Common.OrderUtiil;
 
 namespace Taktamir.Core.Domain._06.Wallets
 {
@@ -20,6 +21,7 @@ namespace Taktamir.Core.Domain._06.Wallets
         public string CodemeliiCustomer { get; set; }
         public int WalletId { get; set; }
         public  Wallet Wallet { get; set; }
+        public PaymentStatus PaymentStatus { get; set; }
 
         public virtual ICollection<OrderJob> OrderJobs { get; set; }
 
@@ -33,4 +35,5 @@ namespace Taktamir.Core.Domain._06.Wallets
         public int JobId { get; set; }
         public Job Job { get; set; }
     }
+   
 }

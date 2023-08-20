@@ -89,6 +89,7 @@ namespace Taktamir.infra.Data.sql._03.Users
                 .Take(pageSize)
                 .ToListAsync();
             var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            
             return Tuple.Create(users, paginationMetadata);
 
            

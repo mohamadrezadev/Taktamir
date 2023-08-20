@@ -10,6 +10,7 @@ using Taktamir.Core.Domain._03.Users;
 using Taktamir.Core.Domain._06.Wallets;
 using Taktamir.framework.Common;
 using Taktamir.framework.Common.JobsUtill;
+using Taktamir.framework.Common.OrderUtiil;
 using Taktamir.infra.Data.sql._01.Common;
 using Taktamir.infra.Data.sql._03.Users;
 
@@ -91,6 +92,31 @@ namespace Taktamir.infra.Data.sql._06.Wallets
             return Tuple.Create(users, paginationMetadata);
         }
 
+        public async Task<Tuple<List<User>, PaginationMetadata>> GetAllOrdersOutstandingbyAdmin(int page = 1, int pageSize = 10)
+        {
+            //var query = DbContext.Users.Include(p => p.Wallet)
+            //     .ThenInclude(w => w.Orders.Where(o => o.PaymentStatus == PaymentStatus.unpaid))
+            //     .ThenInclude(o => o.OrderJobs.Where(Job => Job.Job.StatusJob == StatusJob.Completed))
+            //     .ThenInclude(j => j.Job.StatusJob==StatusJob.Completed)
+            //     .ThenInclude(c => c.Customer);
+            var query =await DbContext.Users.Include(p => p.Wallet)
+                .ThenInclude(w => w.Orders)
+                    .ThenInclude(o => o.OrderJobs)
+                        .ThenInclude(j => j.Job)
+                            .ThenInclude(j => j.Customer)
+                .ToListAsync();
+
+            var totalCount =  query.Count();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var users =  query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users, paginationMetadata);
+        }
+
         public async Task<Tuple<List<User>, PaginationMetadata>> GetAll_Work_pending_Orders(int page = 1, int pageSize = 10)
         {
             var query = DbContext.Users
@@ -117,20 +143,33 @@ namespace Taktamir.infra.Data.sql._06.Wallets
 
         public Task<Order> GetOrderDetails(int orderid)
         {
-           var order=DbContext.Orders.FirstOrDefault(p=>p.Id == orderid);
-           if (order == null) throw new Exception("Not Found order ....!");
+           var order=DbContext.Orders
+             .Include(p=>p.OrderJobs)
+            .ThenInclude(p=>p.Job)
+            .ThenInclude(p=>p.Supplies)
+            .Include(p=>p.OrderJobs).ThenInclude(p=>p.Job).ThenInclude(p=>p.Customer)
+            .FirstOrDefault(p=>p.Id == orderid);
            return Task.FromResult( order);
-           //var rsult= order.Jobs.Select(p=>new Job
-           //{
-           //    Problems = p.Problems,
-           //    Id = p.Id,
-           //    Description = p.Description,
-           //    Name_Device=p.Name_Device,
-           //    Supplies = p.Supplies,
-           //    Customer=p.Customer,
-           //    StatusJob=p.StatusJob,
-           //    SuppliesId=p.SuppliesId
-           //}).ToList();
+        }
+
+        public async Task<Tuple<List<User>, PaginationMetadata>> GetAllOrdersClearedbyAdmin(int page = 1, int pageSize = 10)
+        {
+            var query = DbContext.Users.Include(p => p.Wallet)
+                .ThenInclude(w => w.Orders.Where(o => o.PaymentStatus == PaymentStatus.paid))
+                .ThenInclude(o => o.OrderJobs.Where(Job => Job.Job.StatusJob == StatusJob.Completed))
+                .ThenInclude(j => j.Job)
+                .ThenInclude(c => c.Customer);
+
+
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            var paginationMetadata = new PaginationMetadata(totalCount, totalPages, CurrentPage: page, pageSize);
+            return Tuple.Create(users, paginationMetadata);
         }
     }
 }

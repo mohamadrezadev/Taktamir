@@ -33,10 +33,7 @@ namespace Taktamir.infra.Data.sql._01.Common
 
         }
 
-        //public AppDbContext()
-        //{
-
-        //}
+       
         public virtual DbSet<Job> Jobs { get; set; }
         public virtual DbSet<Customer> Customers { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
